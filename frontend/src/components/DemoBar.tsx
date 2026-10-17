@@ -30,6 +30,14 @@ export function DemoBar({ state, onStop, onRetry, onDismiss }: DemoBarProps) {
   const total = state.steps.length;
   const step = state.steps[state.current];
   const running = state.phase === "running" || state.phase === "stopping";
+  const caption =
+    state.phase === "failed" && step?.error
+      ? `Step failed: ${step.error}`
+      : step?.caption
+        ? step.caption
+        : step?.status === "running"
+          ? "Working…"
+          : "";
 
   return (
     <section className={`demo-bar demo-${state.phase}`} aria-label="Scripted demo">
@@ -69,14 +77,8 @@ export function DemoBar({ state, onStop, onRetry, onDismiss }: DemoBarProps) {
         ))}
       </ol>
 
-      <p className="demo-caption" role={state.phase === "failed" ? "alert" : "status"} aria-live="polite">
-        {state.phase === "failed" && step?.error
-          ? `Step failed: ${step.error}`
-          : step?.caption
-            ? step.caption
-            : step?.status === "running"
-              ? "Working…"
-              : ""}
+      <p className="demo-caption" role={state.phase === "failed" ? "alert" : "status"} aria-live="polite" title={caption}>
+        {caption}
       </p>
     </section>
   );
