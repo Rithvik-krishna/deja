@@ -20,6 +20,9 @@ export type FixStat = S["FixStat"];
 export type ChatResponse = S["ChatResponse"];
 export type Catalog = S["Catalog"];
 export type Symptom = S["AlertRequest"]["symptom"];
+export type EvidenceShockRequest = S["EvidenceShockRequest"];
+export type EvidenceShockResponse = S["EvidenceShockResponse"];
+export type HypothesisResponse = S["HypothesisResponse"];
 
 const BASE: string = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000";
 
@@ -59,4 +62,6 @@ export const api = {
   chat: (session_id: string, message: string) => post<ChatResponse>("/chat", { session_id, message }),
   wipeSession: (session_id: string) => post<S["WipeResponse"]>("/sessions/wipe", { session_id }),
   resetDemo: () => post<S["DemoResetResponse"]>("/demo/reset", {}),
+  hypotheses: (incident_id: string) => call<HypothesisResponse>(`/insights/hypotheses/${incident_id}`),
+  evidenceShock: (req: EvidenceShockRequest) => post<EvidenceShockResponse>("/insights/evidence-shock", req),
 };
