@@ -4,7 +4,7 @@ import { Chat } from "./components/Chat";
 import { IncidentPanel } from "./components/IncidentPanel";
 import { OwnersPanel } from "./components/OwnersPanel";
 import GraphView from "./components/GraphView";
-import { TabPlaceholder } from "./components/placeholders/TabPlaceholder";
+import RiskPanel from "./components/RiskPanel";
 import { StressTestPanel } from "./components/StressTestPanel";
 import { panelId, tabId, Tabs, type TabDef } from "./components/Tabs";
 import { ToastViewport } from "./components/Toast";
@@ -31,6 +31,10 @@ export default function App() {
   // The graph the centre panel should show. Set by chat replies, picking an incident, and recording an outcome.
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  // Node ids GraphView should emphasise (set by the Risk table when a service is picked).
+  const [focusIds, setFocusIds] = useState<string[]>([]);
+  // Bumped on demo reset so RiskPanel (which owns its own fetch) remounts and re-fetches instead of showing pre-reset data.
+  const [riskEpoch, setRiskEpoch] = useState(0);
   const [activeTab, setActiveTab] = useState<RightTab>("incident");
   // Bumped whenever something outside IncidentPanel may have changed incident data.
   const [incidentRefresh, setIncidentRefresh] = useState(0);
@@ -89,6 +93,8 @@ export default function App() {
       dispatch({ type: "cleared" });
       setSessionId(newSessionId());
       setGraph(null);
+      setFocusIds([]);
+      setRiskEpoch((n) => n + 1);
       setShock(null);
       setSelectedIncidentId(null);
       setIncidentRefresh((n) => n + 1);
@@ -138,7 +144,7 @@ export default function App() {
           <h2 className="pane-title">Incident graph</h2>
           <div className="graph-host">
             {graph ? (
-              <GraphView payload={graph} />
+              <GraphView payload={graph} focusIds={focusIds} />
             ) : (
               <div className="state graph-empty">
                 <p>No graph yet.</p>
@@ -152,9 +158,8 @@ export default function App() {
           <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} label="Details" />
           {/* All panels stay mounted (hidden, not unmounted) so switching tabs keeps their state. */}
           <div {...panel("risk")}>
-            <TabPlaceholder title="Risk map" status="Not available in this build">
-              The risk table and blast-radius view aren't included yet. No risk data is shown here.
-            </TabPlaceholder>
+            {/* Rithvik's RiskPanel: fetches /graph/risk itself and pushes the risk graph to the centre via onGraph. */}
+            <RiskPanel key={riskEpoch} onGraph={setGraph} onSelectService={(svc) => setFocusIds([`svc:${svc}`])} />
           </div>
           <div {...panel("incident")}>
             <IncidentPanel

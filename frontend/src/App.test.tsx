@@ -8,9 +8,12 @@ import {
   detail037,
   detail045,
   inc037,
+  blastGraph,
+  blastResponse,
   hypBaseline,
   inc045,
   ownerNow,
+  riskResponse,
   shockInconclusive,
   outcomeFailed,
   timeline037,
@@ -41,6 +44,8 @@ vi.mock("./api/client", () => ({
     reassign: vi.fn(),
     hypotheses: vi.fn(),
     evidenceShock: vi.fn(),
+    risk: vi.fn(),
+    blast: vi.fn(),
   },
 }));
 const m = vi.mocked(api);
@@ -59,6 +64,8 @@ beforeEach(() => {
   m.wipeSession.mockResolvedValue({ session_id: "x", wiped: true });
   m.owner.mockResolvedValue(ownerNow);
   m.hypotheses.mockResolvedValue(hypBaseline);
+  m.risk.mockResolvedValue(riskResponse);
+  m.blast.mockResolvedValue(blastResponse);
 });
 
 describe("startup and layout", () => {
@@ -118,18 +125,50 @@ describe("startup and layout", () => {
     expect(await screen.findByText("MOCK · in-memory data")).toBeInTheDocument();
   });
 
-  it("shows an honest unavailable state on the Risk tab: no stale wording, no data", async () => {
+  it("uses the real RiskPanel: loads risk from the API, shows its graph, and a row pick loads the blast radius", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("tab", { name: "Risk" }));
 
+    // RiskPanel fetches on mount and pushes the risk graph to the centre panel.
+    await waitFor(() => expect(m.risk).toHaveBeenCalledWith(180, 10));
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("2 nodes"));
+    expect(m.blast).toHaveBeenCalledWith("payments-api", 3); // top-ranked service is selected by default
+
+    await user.click(screen.getByRole("tab", { name: "Risk" }));
     const panel = within(screen.getByRole("tabpanel", { name: "Risk" }));
-    expect(panel.getByRole("heading", { name: "Risk map" })).toBeInTheDocument();
-    expect(panel.getByText("Not available in this build")).toBeInTheDocument();
-    expect(panel.getByText(/No risk data is shown here/)).toBeInTheDocument();
-    expect(panel.queryByText(/Phase 1/)).not.toBeInTheDocument();
-    expect(panel.queryAllByRole("button")).toHaveLength(0); // nothing that pretends to work
-    expect(panel.queryByRole("table")).not.toBeInTheDocument();
+    expect(await panel.findByText("Systemic Risk Map")).toBeInTheDocument();
+    const row = (await panel.findAllByRole("row")).find((r) => r.textContent?.includes("checkout"));
+    expect(row).toBeDefined();
+
+    m.blast.mockResolvedValueOnce({ ...blastResponse, service: "checkout", graph: blastGraph });
+    await user.click(row as HTMLElement);
+
+    await waitFor(() => expect(m.blast).toHaveBeenLastCalledWith("checkout", 3));
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("4 nodes")); // the blast graph replaced the risk graph
+  });
+
+  it("re-fetches the risk map after the demo is reset, instead of keeping pre-reset data", async () => {
+    const user = userEvent.setup();
+    m.resetDemo.mockResolvedValue({ ok: true, counts: {} });
+    render(<App />);
+    await waitFor(() => expect(m.risk).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByRole("button", { name: "Reset demo" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Reset demo data" }));
+
+    await waitFor(() => expect(m.risk).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("2 nodes")); // opening state: the risk graph again
+  });
+
+  it("a later chat reply replaces the risk graph, so the centre pane always follows the latest action", async () => {
+    const user = userEvent.setup();
+    m.chat.mockResolvedValue(chatAlert);
+    render(<App />);
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("2 nodes")); // risk graph first
+
+    await user.click(screen.getByRole("button", { name: "Checkout latency is spiking" }));
+    await screen.findByText(chatAlert.reply);
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("3 nodes")); // the chat reply's own graph
   });
 
   it("keeps non-active tab panels mounted so their state survives switching tabs", async () => {
@@ -342,7 +381,7 @@ describe("evidence shock and demo reset", () => {
 
     expect(await screen.findByText(/Select an incident \(in the Incident tab/)).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Result (after removal)" })).not.toBeInTheDocument();
-    expect(graphTotals()).toBeNull();
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("2 nodes")); // not the shock graph (1 node): back to the risk graph
     // Re-selecting the same incident afterwards must not resurrect the old result.
     await user.click(screen.getByRole("tab", { name: "Incident" }));
     await user.click(await within(incidentsRegion()).findByRole("button", { name: /INC-045/ }));
@@ -463,7 +502,8 @@ describe("demo reset", () => {
     expect(m.resetDemo).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByText(chatAlert.reply)).not.toBeInTheDocument();
-    expect(screen.getByText("No graph yet.")).toBeInTheDocument();
+    // The chat's 3-node graph is gone; the freshly re-fetched 2-node risk graph is the new opening state.
+    await waitFor(() => expect(graphTotals()).toHaveTextContent("2 nodes"));
     await waitFor(() => expect(m.incidents.mock.calls.length).toBeGreaterThan(incidentLoads));
   });
 

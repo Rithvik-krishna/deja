@@ -1,7 +1,7 @@
 // Fixtures typed against the real contract types (so a contract change breaks the tests at compile time).
 // Shapes and values mirror contract/examples/*.json.
 import type { ChatResponse, GraphPayload, IncidentDetail, IncidentSummary, OutcomeResponse, TimelineEvent } from "../api/client";
-import type { Catalog, EvidenceShockResponse, HypothesisResponse, OwnerResponse, ReassignResponse } from "../api/client";
+import type { BlastResponse, Catalog, EvidenceShockResponse, HypothesisResponse, OwnerResponse, ReassignResponse, RiskResponse } from "../api/client";
 
 export const graphA: GraphPayload = {
   nodes: [
@@ -231,3 +231,42 @@ export const shockProbe: EvidenceShockResponse = {
 
 /** Removing only the deploy evidence: robust, and no graph payload. */
 export const shockRobustNoGraph: EvidenceShockResponse = { ...shockProbe, graph: undefined };
+
+// ---- Risk map fixtures (synthetic, shaped like contract/examples/graph_risk.json and graph_blast_*.json) ----
+export const riskGraph: GraphPayload = {
+  nodes: [
+    { id: "svc:payments-api", label: "Service", name: "payments-api", props: {}, highlight: true, score: 12 },
+    { id: "svc:checkout", label: "Service", name: "checkout", props: {}, highlight: false, score: 3 },
+  ],
+  edges: [],
+};
+
+export const riskResponse: RiskResponse = {
+  as_of: "2026-10-17",
+  window_days: 180,
+  incidents_in_window: 8,
+  services: [
+    { service: "payments-api", tier: "tier-2", team: "payments-platform", owner: "Asha Menon", direct_dependents: 3, transitive_dependents: 7, incidents_originated: 5, risk_score: 22, rank: 1, fan_in_rank: 6, incident_rank: 1, insight: "Hidden single point of failure" },
+    { service: "checkout", tier: "tier-1", team: "commerce", owner: "Sana Khan", direct_dependents: 1, transitive_dependents: 2, incidents_originated: 0, risk_score: 2, rank: 2, fan_in_rank: 2, incident_rank: 5, insight: "" },
+  ],
+  graph: riskGraph,
+};
+
+export const blastGraph: GraphPayload = {
+  nodes: [
+    { id: "svc:payments-api", label: "Service", name: "payments-api", props: {}, highlight: true, score: 12 },
+    { id: "svc:checkout", label: "Service", name: "checkout", props: {}, highlight: false, score: 3 },
+    { id: "svc:cart", label: "Service", name: "cart", props: {}, highlight: false, score: 2 },
+    { id: "svc:web-frontend", label: "Service", name: "web-frontend", props: {}, highlight: false, score: 1 },
+  ],
+  edges: [],
+};
+
+export const blastResponse: BlastResponse = {
+  service: "payments-api",
+  depth: 3,
+  total: 3,
+  impacted: [{ service: "checkout", tier: "tier-1", hops: 1, owner: "Sana Khan" }],
+  recent_deploys: [],
+  graph: blastGraph,
+};
