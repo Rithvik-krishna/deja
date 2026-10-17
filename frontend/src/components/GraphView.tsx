@@ -102,11 +102,14 @@ export default function GraphView({
     };
     updateSize();
 
-    const ro = new ResizeObserver(updateSize);
-    ro.observe(containerRef.current);
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(updateSize);
+      ro.observe(containerRef.current);
+    }
     window.addEventListener("resize", updateSize);
     return () => {
-      ro.disconnect();
+      ro?.disconnect();
       window.removeEventListener("resize", updateSize);
     };
   }, []);

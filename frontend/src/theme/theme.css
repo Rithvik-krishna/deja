@@ -1,34 +1,126 @@
-/* Design tokens + base styles. Dark, high contrast, readable on a projector.
-   Contrast (WCAG): --text on --surface ≈ 15:1, --text-muted on --surface ≈ 8:1, white on --primary ≈ 5.2:1. */
+/* Design tokens. Every colour, size and radius used by the app shell and my panels comes from here.
+   Palette follows Obsidian's restrained dark interface; light mode mirrors it. Status colours are muted and
+   verified for contrast on their surfaces (>= 4.5:1 for text). */
+
 :root {
+  /* Spacing scale (use these, not ad-hoc values). */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* Radii: controls, panels, dialogs. */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+
+  /* Type. */
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --text-base: 14px;
+  --text-sm: 13px;
+  --text-xs: 12px;
+
+  --ease: 140ms ease;
+}
+
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0a0e16;
-  --surface: #121826;
-  --surface-2: #1a2236;
-  --border: #33415c;
-  --border-strong: #4a5a7d;
+  --background: #1e1e1e;
+  --surface: #262626;
+  --surface-2: #2b2b2b;
+  --surface-elevated: #303030;
+  --canvas: #1b1b1b; /* graph and other instrument surfaces */
 
-  --text: #f3f6fb;
-  --text-muted: #b2bdd1;
+  --foreground: #e6e6e6;
+  --foreground-muted: #a1a1aa;
+  --foreground-subtle: #8b8b94; /* the spec's #71717A fails 4.5:1 on #262626; this is the closest compliant step */
+
+  --border: #3a3a3a;
+  --border-strong: #4a4a4a;
+
+  --accent: #a78bfa;
+  --accent-hover: #b7a1ff;
+  --accent-foreground: #1e1e1e;
+  --accent-subtle: rgb(167 139 250 / 0.14);
+
+  --success: #7cc495;
+  --success-subtle: rgb(124 196 149 / 0.14);
+  --warning: #d9a441;
+  --warning-subtle: rgb(217 164 65 / 0.14);
+  --critical: #e5726f;
+  --critical-subtle: rgb(229 114 111 / 0.14);
+  --critical-solid: #c2504d;
+
+  --focus: #b7a1ff;
+  --scrim: rgb(0 0 0 / 0.55);
+  --shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --background: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f0f0f2;
+  --surface-elevated: #ffffff;
+  --canvas: #1b1b1b; /* graph / instrument panels stay dark: the teammate-owned graph components paint their own dark colours */
+
+  --foreground: #202124;
+  --foreground-muted: #60636b;
+  --foreground-subtle: #767983;
+
+  --border: #e3e4e8;
+  --border-strong: #cfd1d8;
+
+  --accent: #7653d6;
+  --accent-hover: #6845c5;
+  --accent-foreground: #ffffff;
+  --accent-subtle: rgb(118 83 214 / 0.1);
+
+  --success: #2c7a4b;
+  --success-subtle: rgb(44 122 75 / 0.1);
+  --warning: #96640f;
+  --warning-subtle: rgb(150 100 15 / 0.12);
+  --critical: #c0392f;
+  --critical-subtle: rgb(192 57 47 / 0.1);
+  --critical-solid: #c0392f;
+
+  --focus: #6845c5;
+  --scrim: rgb(20 20 25 / 0.35);
+  --shadow: 0 8px 24px rgb(20 20 25 / 0.16);
+}
+
+[data-theme="light"],
+:root.light {
+  color-scheme: light;
+
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text: #0f172a;
+  --text-muted: #64748b;
 
   --primary: #2563eb;
-  --primary-hover: #3b73f0;
-  --accent: #7db4ff;
-  --success: #4ade80;
-  --success-bg: #11301f;
-  --danger: #ff7b7b;
-  --danger-bg: #3a1618;
+  --primary-hover: #1d4ed8;
+  --accent: #3b82f6;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
   --danger-solid: #dc2626;
-  --warn: #fbbf24;
-  --warn-bg: #3a2c0a;
-  --memory: #5eead4;
-  --memory-bg: #0f2b2a;
-  --focus: #ffd166;
-
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --radius: 10px;
+  --warn: #d97706;
+  --warn-bg: #fef3c7;
+  --memory: #0d9488;
+  --memory-bg: #ccfbf1;
+  --focus: #2563eb;
 }
 
 *,
@@ -45,11 +137,12 @@ body,
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font);
-  font-size: 16px;
+  font-size: var(--text-base);
   line-height: 1.5;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -71,9 +164,11 @@ ol {
   list-style: none;
 }
 
-code {
+code,
+.mono {
   font-family: var(--mono);
-  font-size: 0.9em;
+  font-size: 0.92em;
+  font-variant-numeric: tabular-nums;
 }
 
 button,
@@ -90,15 +185,19 @@ button {
 
 button:disabled,
 select:disabled,
-textarea:disabled {
+textarea:disabled,
+input:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
-/* Visible focus for keyboard users everywhere. */
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-subtle);
 }
 
 .visually-hidden {
@@ -113,9 +212,18 @@ textarea:disabled {
   border: 0;
 }
 
+/* Slim, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
