@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:ui": "npx --yes vite-node src/tests/verify_ui.tsx"
   },
   "dependencies": {
     "react": "^18.3.1",
