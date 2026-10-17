@@ -133,15 +133,15 @@ export async function testEvidenceShockSerialization() {
     if (!body1.remove_sources.includes("cicd-deploy-log")) throw new Error("Failed to serialize remove_sources");
     if (!body1.remove_evidence_ids.includes("ev:deploy:payments-api")) throw new Error("Failed to serialize remove_evidence_ids");
 
-    // 2. Positional parameters syntax
+    // 2. Request with partial options
     interceptedRequests = [];
-    const res2 = await api.evidenceShock("INC-042", ["incident-history"]);
-    if (res2.incident_id !== "INC-042") throw new Error("Positional syntax failed");
+    const res2 = await api.evidenceShock({ incident_id: "INC-042", remove_sources: ["incident-history"] });
+    if (res2.incident_id !== "INC-042") throw new Error("Request with partial options failed");
 
     const req2 = interceptedRequests[0];
     const body2 = JSON.parse(req2.init?.body as string);
     if (body2.incident_id !== "INC-042" || !body2.remove_sources.includes("incident-history")) {
-      throw new Error("Positional syntax serialization mismatch");
+      throw new Error("Partial options serialization mismatch");
     }
 
     console.log("✓ PASS: testEvidenceShockSerialization (POST /insights/evidence-shock with optional fields)");

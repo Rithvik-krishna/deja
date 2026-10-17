@@ -73,23 +73,5 @@ export const api = {
   resetDemo: () => post<S["DemoResetResponse"]>("/demo/reset", {}),
   hypotheses: (incidentId: string) =>
     call<HypothesisResponse>(`/insights/hypotheses/${encodeURIComponent(incidentId)}`),
-  evidenceShock: (
-    reqOrIncidentId: string | EvidenceShockRequest,
-    removeSources?: string[],
-    removeEvidenceIds?: string[],
-    service?: string,
-    symptom?: Symptom
-  ) => {
-    const body: EvidenceShockRequest =
-      typeof reqOrIncidentId === "string"
-        ? {
-            incident_id: reqOrIncidentId,
-            remove_sources: removeSources,
-            remove_evidence_ids: removeEvidenceIds,
-            service,
-            symptom,
-          }
-        : reqOrIncidentId;
-    return post<EvidenceShockResponse>("/insights/evidence-shock", body);
-  },
+  evidenceShock: (req: EvidenceShockRequest) => post<EvidenceShockResponse>("/insights/evidence-shock", req),
 };
