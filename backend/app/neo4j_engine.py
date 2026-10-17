@@ -176,18 +176,14 @@ class Neo4jEngine(WriteMixin, Engine):
     ):
         query = """
         MATCH (i:Incident {id: $id})-[:ORIGINATED_IN]->(orig:Service)
-        OPTIONAL MATCH (i)-[:IMPACTED]->(imp:Service)
         OPTIONAL MATCH (i)-[:FOLLOWED]->(d:Deploy)-[:TO]->(ds:Service)
         OPTIONAL MATCH (d)-[:AUTHORED_BY]->(de:Engineer)
-        OPTIONAL MATCH (i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix)
-        WITH i, orig, collect(DISTINCT imp.name) AS impacted,
-             d, ds, de,
-             collect(DISTINCT CASE WHEN a IS NOT NULL THEN {fix: f.id, status: a.status} ELSE null END) AS raw_attempts
         RETURN i.id AS id, i.title AS title, i.severity AS severity, i.symptom AS symptom, i.status AS status,
-               orig.name AS origin, impacted,
+               orig.name AS origin,
+               [(i)-[:IMPACTED]->(imp:Service) | imp.name] AS impacted,
                d.id AS deploy_id, ds.name AS deploy_svc, d.version AS deploy_ver, d.deployed_at AS deployed_at,
                de.id AS author_id, de.name AS author_name, de.team AS author_team,
-               [att IN raw_attempts WHERE att IS NOT NULL] AS attempts
+               [(i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix) | {fix: f.id, status: a.status}] AS attempts
         """
         rows = self._run(query, id=incident_id)
         if not rows:
@@ -533,25 +529,18 @@ class Neo4jEngine(WriteMixin, Engine):
         cypher = """
         MATCH (i:Incident)-[:ORIGINATED_IN]->(orig:Service)
         WHERE ($exclude IS NULL OR i.id <> $exclude)
-        OPTIONAL MATCH (i)-[:IMPACTED]->(imp:Service)
-        OPTIONAL MATCH (i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix)
-        OPTIONAL MATCH (a)-[:BY]->(e:Engineer)
-        WITH i, orig, collect(DISTINCT imp.name) AS impacted,
-             a, f, e
-        ORDER BY i.started_at DESC, a.ts ASC, a.id ASC
-        WITH i, orig, impacted,
-             collect(CASE WHEN a IS NOT NULL THEN {
-                 id: a.id,
-                 fix: f.id,
-                 status: a.status,
-                 ts: a.ts,
-                 engineer: e.name,
-                 notes: coalesce(a.notes, '')
-             } ELSE null END) AS raw_attempts
         RETURN i.id AS id, i.title AS title, i.severity AS severity,
                i.symptom AS symptom, i.status AS status, i.started_at AS started_at,
-               orig.name AS origin, impacted,
-               [att IN raw_attempts WHERE att IS NOT NULL] AS attempts
+               orig.name AS origin,
+               [(i)-[:IMPACTED]->(imp:Service) | imp.name] AS impacted,
+               [(i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix) | {
+                   id: a.id,
+                   fix: f.id,
+                   status: a.status,
+                   ts: a.ts,
+                   engineer: head([(a)-[:BY]->(e:Engineer) | e.name]),
+                   notes: coalesce(a.notes, '')
+               }] AS attempts
         ORDER BY started_at DESC
         """
         rows = self._run(cypher, exclude=exclude)
@@ -586,6 +575,7 @@ class Neo4jEngine(WriteMixin, Engine):
 
         results = []
         for sc, started_iso, r, w in out[:limit]:
+            raw_attempts = sorted(r["attempts"], key=lambda a: (to_iso(a["ts"]), a["id"]))
             att_summaries = [
                 AttemptSummary(
                     id=a["id"],
@@ -595,7 +585,7 @@ class Neo4jEngine(WriteMixin, Engine):
                     engineer=a["engineer"],
                     notes=a.get("notes", ""),
                 )
-                for a in r["attempts"]
+                for a in raw_attempts
             ]
             inc_summary = IncidentSummary(
                 id=r["id"],
