@@ -1,0 +1,99 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "fastapi"
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/health",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/catalog",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/graph/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/insights/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/incidents/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/incidents",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/alert",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/outcome",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/owner",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/chat",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/sessions/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/demo/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}

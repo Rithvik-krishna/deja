@@ -105,7 +105,7 @@ class Neo4jEngine(WriteMixin, Engine):
             liveness_check_timeout=1,
         )
         self.db = config.NEO4J_DATABASE
-        self._service_cache: dict[str, dict[str, Any]] = {}
+        self._service_cache: Optional[dict[str, dict[str, Any]]] = None
 
     def _run(self, cypher: str, **params: Any) -> list[dict[str, Any]]:
         with self.driver.session(database=self.db) as s:
@@ -124,24 +124,21 @@ class Neo4jEngine(WriteMixin, Engine):
             return Health(status="degraded", mode="live", neo4j=False)
 
     def reset(self) -> DemoResetResponse:
-        self._service_cache.clear()
+        self._service_cache = None
         from scripts.load_seed import load
-        counts = load(self.driver, wipe=True, database=self.db)
-        self._service_cache.clear()
-        return DemoResetResponse(ok=True, counts=counts)
+        return DemoResetResponse(ok=True, counts=load(self.driver, wipe=True, database=self.db))
 
     # ------------------------------------------------------------------ helpers
     def _need_service(self, name: str) -> dict[str, Any]:
-        if name in self._service_cache:
-            return self._service_cache[name]
-        rows = self._run(
-            "MATCH (s:Service {name: $name}) RETURN s.name AS name, s.tier AS tier, s.team AS team, s.description AS description",
-            name=name,
-        )
-        if not rows:
+        if self._service_cache is None:
+            rows = self._run(
+                "MATCH (s:Service) RETURN s.name AS name, s.tier AS tier, s.team AS team, s.description AS description"
+            )
+            self._service_cache = {r["name"]: r for r in rows}
+        svc = self._service_cache.get(name)
+        if not svc:
             raise NotFound(f"unknown service '{name}'")
-        self._service_cache[name] = rows[0]
-        return rows[0]
+        return svc
 
     def _svc_node(self, g: G, name: str, highlight: bool = False, score: Optional[float] = None):
         s = self._need_service(name)
@@ -185,20 +182,14 @@ class Neo4jEngine(WriteMixin, Engine):
     ):
         query = """
         MATCH (i:Incident {id: $id})-[:ORIGINATED_IN]->(orig:Service)
-        OPTIONAL MATCH (i)-[r_imp:IMPACTED]->(imp:Service)
-        WITH i, orig, imp, r_imp ORDER BY elementId(r_imp)
-        WITH i, orig, [x IN collect(DISTINCT imp.name) WHERE x IS NOT NULL] AS impacted
         OPTIONAL MATCH (i)-[:FOLLOWED]->(d:Deploy)-[:TO]->(ds:Service)
         OPTIONAL MATCH (d)-[:AUTHORED_BY]->(de:Engineer)
-        OPTIONAL MATCH (i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix)
-        WITH i, orig, impacted,
-             d, ds, de,
-             collect(DISTINCT CASE WHEN a IS NOT NULL THEN {fix: f.id, status: a.status} ELSE null END) AS raw_attempts
         RETURN i.id AS id, i.title AS title, i.severity AS severity, i.symptom AS symptom, i.status AS status,
-               orig.name AS origin, impacted,
+               orig.name AS origin,
+               [(i)-[:IMPACTED]->(imp:Service) | imp.name] AS impacted,
                d.id AS deploy_id, ds.name AS deploy_svc, d.version AS deploy_ver, d.deployed_at AS deployed_at,
                de.id AS author_id, de.name AS author_name, de.team AS author_team,
-               [att IN raw_attempts WHERE att IS NOT NULL] AS attempts
+               [(i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix) | {fix: f.id, status: a.status}] AS attempts
         """
         rows = self._run(query, id=incident_id)
         if not rows:
@@ -544,27 +535,18 @@ class Neo4jEngine(WriteMixin, Engine):
         cypher = """
         MATCH (i:Incident)-[:ORIGINATED_IN]->(orig:Service)
         WHERE ($exclude IS NULL OR i.id <> $exclude)
-        OPTIONAL MATCH (i)-[r_imp:IMPACTED]->(imp:Service)
-        WITH i, orig, imp, r_imp ORDER BY elementId(r_imp)
-        WITH i, orig, [x IN collect(DISTINCT imp.name) WHERE x IS NOT NULL] AS impacted
-        OPTIONAL MATCH (i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix)
-        OPTIONAL MATCH (a)-[:BY]->(e:Engineer)
-        WITH i, orig, impacted,
-             a, f, e
-        ORDER BY i.started_at DESC, a.ts ASC, a.id ASC
-        WITH i, orig, impacted,
-             collect(CASE WHEN a IS NOT NULL THEN {
-                 id: a.id,
-                 fix: f.id,
-                 status: a.status,
-                 ts: a.ts,
-                 engineer: e.name,
-                 notes: coalesce(a.notes, '')
-             } ELSE null END) AS raw_attempts
         RETURN i.id AS id, i.title AS title, i.severity AS severity,
                i.symptom AS symptom, i.status AS status, i.started_at AS started_at,
-               orig.name AS origin, impacted,
-               [att IN raw_attempts WHERE att IS NOT NULL] AS attempts
+               orig.name AS origin,
+               [(i)-[:IMPACTED]->(imp:Service) | imp.name] AS impacted,
+               [(i)-[:HAD_ATTEMPT]->(a:Attempt)-[:USED]->(f:Fix) | {
+                   id: a.id,
+                   fix: f.id,
+                   status: a.status,
+                   ts: a.ts,
+                   engineer: head([(a)-[:BY]->(e:Engineer) | e.name]),
+                   notes: coalesce(a.notes, '')
+               }] AS attempts
         ORDER BY started_at DESC
         """
         rows = self._run(cypher, exclude=exclude)
@@ -599,6 +581,7 @@ class Neo4jEngine(WriteMixin, Engine):
 
         results = []
         for sc, started_iso, r, w in out[:limit]:
+            raw_attempts = sorted(r["attempts"], key=lambda a: (to_iso(a["ts"]), a["id"]))
             att_summaries = [
                 AttemptSummary(
                     id=a["id"],
@@ -608,7 +591,7 @@ class Neo4jEngine(WriteMixin, Engine):
                     engineer=a["engineer"],
                     notes=a.get("notes", ""),
                 )
-                for a in r["attempts"]
+                for a in raw_attempts
             ]
             inc_summary = IncidentSummary(
                 id=r["id"],
@@ -636,8 +619,7 @@ class Neo4jEngine(WriteMixin, Engine):
         t_iso = t.strftime("%Y-%m-%dT%H:%M:%SZ")
         t_date = t.date().isoformat()
 
-        # Candidates = service (hops 0) + upstream deps within 3 hops via shortestPath
-        cands_query = """
+        query = """
         MATCH (s:Service {name: $service})
         OPTIONAL MATCH p = shortestPath((s)-[:DEPENDS_ON*1..3]->(c:Service))
         WHERE c <> s
@@ -648,37 +630,51 @@ class Neo4jEngine(WriteMixin, Engine):
         WITH s, collect({name: cname, hops: hops}) AS deps
         WITH [{name: s.name, hops: 0}] + deps AS candidates
         UNWIND candidates AS cand
-        RETURN cand.name AS name, cand.hops AS hops
-        ORDER BY hops ASC, name ASC
-        """
-        cand_rows = self._run(cands_query, service=service)
+        MATCH (svc:Service {name: cand.name})
 
-        out = []
-        for row in cand_rows:
-            name = row["name"]
-            hops = row["hops"]
-
-            # Owner as of t.date()
-            owner_query = """
-            MATCH (s:Service {name: $name})
-            OPTIONAL MATCH (e:Engineer)-[o:OWNS]->(s)
+        CALL (svc) {
+            OPTIONAL MATCH (e:Engineer)-[o:OWNS]->(svc)
             WHERE o.valid_from <= date($t_date) AND (o.valid_to IS NULL OR date($t_date) <= o.valid_to)
             WITH e, o ORDER BY o.valid_from DESC
             RETURN head(collect(e.name)) AS owner
-            """
-            owner_res = self._run(owner_query, name=name, t_date=t_date)
-            owner = owner_res[0]["owner"] if owner_res else None
+        }
 
-            # Recent deploys in window [t - 168h, t]
-            deploy_query = """
-            MATCH (d:Deploy)-[:TO]->(s:Service {name: $name})
-            MATCH (d)-[:AUTHORED_BY]->(e:Engineer)
+        CALL (svc) {
+            OPTIONAL MATCH (d:Deploy)-[:TO]->(svc)
             WHERE d.deployed_at >= datetime($t_lo) AND d.deployed_at <= datetime($t_iso)
-            RETURN d.id AS id, s.name AS service, d.version AS version, d.deployed_at AS deployed_at,
-                   e.id AS author_id, e.name AS author_name, e.team AS author_team
-            ORDER BY d.deployed_at DESC
-            """
-            dep_rows = self._run(deploy_query, name=name, t_lo=t_lo, t_iso=t_iso)
+            OPTIONAL MATCH (d)-[:AUTHORED_BY]->(de:Engineer)
+            WITH d, de, svc ORDER BY d.deployed_at DESC
+            RETURN [item IN collect(CASE WHEN d IS NOT NULL AND de IS NOT NULL THEN {
+                id: d.id,
+                service: svc.name,
+                version: d.version,
+                deployed_at: d.deployed_at,
+                author_id: de.id,
+                author_name: de.name,
+                author_team: de.team
+            } ELSE null END) WHERE item IS NOT NULL] AS deploys
+        }
+
+        CALL (svc) {
+            OPTIONAL MATCH (i:Incident)-[:ORIGINATED_IN]->(svc)
+            WHERE i.symptom = $symptom
+              AND (svc.name = $service OR EXISTS {
+                  MATCH (i)-[:IMPACTED]->(:Service {name: $service})
+              })
+            RETURN count(DISTINCT i) AS same_count
+        }
+
+        RETURN cand.name AS name, cand.hops AS hops, owner, deploys, same_count
+        ORDER BY hops ASC, name ASC
+        """
+        rows = self._run(query, service=service, symptom=symptom, t_date=t_date, t_iso=t_iso, t_lo=t_lo)
+
+        out = []
+        for row in rows:
+            name = row["name"]
+            hops = row["hops"]
+            owner = row["owner"]
+            dep_rows = row["deploys"]
             recent_deploys = [
                 DeploySummary(
                     id=d["id"],
@@ -689,19 +685,7 @@ class Neo4jEngine(WriteMixin, Engine):
                 )
                 for d in dep_rows
             ]
-
-            # Same symptom incidents
-            same_query = """
-            MATCH (i:Incident)-[:ORIGINATED_IN]->(s:Service {name: $name})
-            WHERE i.symptom = $symptom
-              AND ($name = $service OR EXISTS {
-                  MATCH (i)-[:IMPACTED]->(:Service {name: $service})
-              })
-            RETURN count(DISTINCT i) AS cnt
-            """
-            same_res = self._run(same_query, name=name, symptom=symptom, service=service)
-            same_count = same_res[0]["cnt"] if same_res else 0
-
+            same_count = row["same_count"]
             has_recent = 1 if recent_deploys else 0
             score = round(3 * has_recent + same_count + 1 / (hops + 1), 3)
 

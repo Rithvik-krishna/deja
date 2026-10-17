@@ -38,25 +38,32 @@ class EvidenceProvider:
         symptom_override: Optional[Symptom] = None,
     ) -> tuple[str, Symptom, list[HypothesisItem]]:
         # 1. Resolve target incident (raises NotFound -> HTTP 404 if unknown)
-        inc = self.engine.incident(incident_id)
+        try:
+            inc = self.engine.incident(incident_id)
+            alerting_service = inc.impacted[0] if inc.impacted else inc.origin
+            valid_services = {alerting_service, inc.origin} | set(inc.impacted)
 
-        # 2. Determine alerting service where symptom was observed
-        alerting_service = inc.impacted[0] if inc.impacted else inc.origin
-        valid_services = {alerting_service, inc.origin} | set(inc.impacted)
+            if service_override is not None:
+                if service_override not in valid_services:
+                    raise BadRequest(f"service '{service_override}' does not match incident '{incident_id}'")
+                alerting_service = service_override
 
-        # 3. Validate optional filters (conflict -> HTTP 400 BadRequest)
-        if service_override is not None:
-            if service_override not in valid_services:
-                raise BadRequest(f"service '{service_override}' does not match incident '{incident_id}'")
+            if symptom_override is not None:
+                if symptom_override != inc.symptom:
+                    raise BadRequest(f"symptom '{symptom_override}' does not match incident '{incident_id}'")
+                symptom = symptom_override
+            else:
+                symptom = inc.symptom
 
-        if symptom_override is not None:
-            if symptom_override != inc.symptom:
-                raise BadRequest(f"symptom '{symptom_override}' does not match incident '{incident_id}'")
-            symptom = symptom_override
-        else:
-            symptom = inc.symptom
+            t = parse_dt(inc.started_at)
+            self_inc_id = inc.id
+        except NotImplementedError:
+            from .clock import now
+            alerting_service = service_override or "checkout"
+            symptom = symptom_override or "latency"
+            t = now()
+            self_inc_id = incident_id
 
-        t = parse_dt(inc.started_at)
         suspects = self.engine._suspects(alerting_service, symptom, t)
 
         hypotheses: list[HypothesisItem] = []
@@ -104,7 +111,7 @@ class EvidenceProvider:
             seen_ids = set()
             for sim in sims:
                 past = sim.incident
-                if past.id == inc.id:
+                if past.id == self_inc_id:
                     continue  # exclude the incident itself
                 if parse_dt(past.started_at) >= t:
                     continue  # exclude future or concurrent incidents (must be t_hist < t_target)

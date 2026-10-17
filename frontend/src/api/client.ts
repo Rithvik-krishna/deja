@@ -28,7 +28,12 @@ export type EvidenceItem = S["EvidenceItem"];
 export type CriticalEvidenceItem = S["CriticalEvidenceItem"];
 export type CriticalSourceItem = S["CriticalSourceItem"];
 
-const BASE: string = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000";
+const BASE: string =
+  (import.meta as any).env?.VITE_API_URL !== undefined
+    ? (import.meta as any).env.VITE_API_URL
+    : (import.meta as any).env?.PROD
+    ? ""
+    : "http://localhost:8000";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {

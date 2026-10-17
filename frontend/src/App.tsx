@@ -1,351 +1,193 @@
-import React, { useEffect, useState } from "react";
-import { api, type GraphNode, type GraphPayload } from "./api/client";
-import type { EvidenceShockResponse } from "./components/graph/shockTypes";
+import { useCallback, useReducer, useRef, useState } from "react";
+import { api, type ChatResponse, type EvidenceShockResponse, type GraphPayload } from "./api/client";
+import { Chat } from "./components/Chat";
+import { IncidentPanel } from "./components/IncidentPanel";
+import { OwnersPanel } from "./components/OwnersPanel";
 import GraphView from "./components/GraphView";
 import RiskPanel from "./components/RiskPanel";
-import ShockViz from "./components/ShockViz";
+import { StressTestPanel } from "./components/StressTestPanel";
+import { panelId, tabId, Tabs, type TabDef } from "./components/Tabs";
+import { ToastViewport } from "./components/Toast";
+import { TopBar, type BusyAction } from "./components/TopBar";
+import { errorMessage } from "./lib/errors";
+import { chatReducer } from "./state/chat";
+import { STRESS_TEST_INTENT } from "./state/intents";
+import { newSessionId } from "./state/session";
+import { useAsync } from "./state/useAsync";
+import { useToasts } from "./state/useToasts";
 
-export default function App(): JSX.Element {
-  const [currentGraph, setCurrentGraph] = useState<GraphPayload | null>(null);
+type RightTab = "risk" | "incident" | "stress" | "owners";
+
+const TABS: TabDef<RightTab>[] = [
+  { id: "risk", label: "Risk" },
+  { id: "incident", label: "Incident" },
+  { id: "stress", label: "Stress Test" },
+  { id: "owners", label: "Owners" },
+];
+
+export default function App() {
+  const [sessionId, setSessionId] = useState(newSessionId);
+  const [messages, dispatch] = useReducer(chatReducer, []);
+  // The graph the centre panel should show. Set by chat replies, picking an incident, and recording an outcome.
+  const [graph, setGraph] = useState<GraphPayload | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  // Node ids GraphView should emphasise (set by the Risk table when a service is picked).
   const [focusIds, setFocusIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"risk" | "shock">("risk");
+  // Bumped on demo reset so RiskPanel (which owns its own fetch) remounts and re-fetches instead of showing pre-reset data.
+  const [riskEpoch, setRiskEpoch] = useState(0);
+  const [activeTab, setActiveTab] = useState<RightTab>("incident");
+  // Bumped whenever something outside IncidentPanel may have changed incident data.
+  const [incidentRefresh, setIncidentRefresh] = useState(0);
+  // Latest Evidence Shock result, tagged with its incident so it can never be shown for another one.
+  const [shock, setShock] = useState<{ incidentId: string; result: EvidenceShockResponse } | null>(null);
+  const [busy, setBusy] = useState<BusyAction>(null);
+  const { toasts, notify, dismiss } = useToasts();
+  // Bumped when ownership changes outside OwnersPanel (a chat reassignment), so its lookup is re-run.
+  const [ownersRefresh, setOwnersRefresh] = useState(0);
+  const health = useAsync(() => api.health(), "health");
+  // One /catalog request shared by the Incident (fix options) and Owners (services, engineers) panels.
+  const catalog = useAsync(() => api.catalog(), "catalog");
+  const reloadCatalog = catalog.reload;
+  // The badge only reflects the last /health check, so re-check when a request fails, and again on the first success after an outage.
+  const healthRef = useRef(health);
+  healthRef.current = health;
 
-  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
-  const [shockData, setShockData] = useState<EvidenceShockResponse | null>(null);
-  const [actionNotice, setActionNotice] = useState<string>("Ready. Select a mode or click a service.");
-  const [loading, setLoading] = useState<boolean>(false);
+  const handleChatResponse = useCallback((res: ChatResponse) => {
+    if (healthRef.current.error) healthRef.current.reload();
+    if (res.graph) setGraph(res.graph);
+    if (res.incident_id) setSelectedIncidentId(res.incident_id);
+    if (res.incident_id || res.tool_calls.length > 0) setIncidentRefresh((n) => n + 1);
+    if (res.intent === STRESS_TEST_INTENT) setActiveTab("stress");
+    // Decided from what the backend actually did (its tool calls), not from the user's wording.
+    if (res.tool_calls.some((t) => t.name === "reassign")) {
+      setOwnersRefresh((n) => n + 1);
+      reloadCatalog();
+    }
+  }, [reloadCatalog]);
 
-  // Load initial health and alert
-  useEffect(() => {
-    api.health().catch(() => {});
+  const openIncident = useCallback((id: string) => {
+    setSelectedIncidentId(id);
+    setActiveTab("incident");
   }, []);
 
-  // Handle graph update from subcomponents
-  const handleGraphUpdate = (g: GraphPayload) => {
-    setCurrentGraph(g);
-  };
-
-  // Node click in GraphView
-  const handleNodeClick = (node: GraphNode) => {
-    setFocusIds([node.id]);
-    setActionNotice(`Focused on ${node.label}: ${node.name || node.id}`);
-  };
-
-  // Trigger alert demo scenario: "checkout latency is spiking"
-  const handleTriggerAlert = async () => {
-    setLoading(true);
-    setActionNotice("Triggering alert on checkout-service (latency spike)...");
+  // Clears only the short-term chat session on the server; the graph (and the incident data derived from it) is untouched.
+  async function wipeSession() {
+    setBusy("wipe");
     try {
-      const resp = await api.alert("checkout", "latency");
-      setActiveIncidentId(resp.incident.id);
-      setCurrentGraph(resp.graph);
-      setFocusIds([resp.likely_origin ? `svc:${resp.likely_origin}` : "svc:checkout"]);
-      setActionNotice(
-        `Alert opened: ${resp.incident.id}. Upstream root cause: ${resp.likely_origin}. Recent deploy: ${
-          resp.suspects[0]?.recent_deploys[0]?.version || "none"
-        }`
-      );
-
-      // Fetch baseline shock for this incident
-      runShockAnalysis(resp.incident.id, undefined, undefined, resp.graph);
-    } catch (e: any) {
-      setActionNotice(`Alert error: ${e.message}`);
+      await api.wipeSession(sessionId);
+      dispatch({ type: "cleared" });
+      setSessionId(newSessionId());
+      notify("success", "Chat memory wiped. The graph still remembers.");
+    } catch (e) {
+      notify("error", `Couldn't wipe the session: ${errorMessage(e)}`);
     } finally {
-      setLoading(false);
+      setBusy(null);
     }
-  };
+  }
 
-  // Run evidence shock analysis
-  const runShockAnalysis = async (
-    incidentId: string,
-    removeSources?: string[],
-    removeEvidenceIds?: string[],
-    existingGraph?: GraphPayload
-  ) => {
-    setLoading(true);
-    try {
-      const data = await api.evidenceShock({
-        incident_id: incidentId,
-        remove_sources: removeSources,
-        remove_evidence_ids: removeEvidenceIds,
-      });
-      setShockData(data);
-      if (data.graph && (!existingGraph || removeSources || removeEvidenceIds)) {
-        setCurrentGraph(data.graph);
-      }
-      const marginStr = data.margin_after != null ? data.margin_after.toFixed(2) : "N/A";
-      setActionNotice(
-        `Shock analysis complete: Verdict is ${data.verdict.toUpperCase()} (margin: ${marginStr})`
-      );
-    } catch (err: any) {
-      console.error("Shock error", err);
-      setActionNotice(`Shock analysis error: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle clicking a critical source chip in ShockViz
-  const handleSelectShockSource = (source: string) => {
-    if (!activeIncidentId) {
-      handleTriggerAlert().then(() => {
-        // Run with source removed once incident exists
-      });
-      return;
-    }
-    setActionNotice(`Perturbing channel: removing '${source}' to stress-test diagnosis...`);
-    runShockAnalysis(activeIncidentId, [source]);
-  };
-
-  // Reset demo
-  const handleReset = async () => {
-    setLoading(true);
+  // Destructive: reloads the seed data. The TopBar asks for confirmation before calling this.
+  async function resetDemo() {
+    setBusy("reset");
     try {
       await api.resetDemo();
-      setShockData(null);
-      setActiveIncidentId(null);
+      dispatch({ type: "cleared" });
+      setSessionId(newSessionId());
+      setGraph(null);
       setFocusIds([]);
-      setActionNotice("Demo reset to clean seed state.");
-      // Trigger risk reload
-      const r = await api.risk(180, 10);
-      setCurrentGraph(r.graph);
-    } catch (e: any) {
-      setActionNotice(`Reset error: ${e.message}`);
+      setRiskEpoch((n) => n + 1);
+      setShock(null);
+      setSelectedIncidentId(null);
+      setIncidentRefresh((n) => n + 1);
+      setOwnersRefresh((n) => n + 1);
+      reloadCatalog();
+      health.reload();
+      notify("success", "Demo data reset to the seed.");
+    } catch (e) {
+      notify("error", `Couldn't reset the demo: ${errorMessage(e)}`);
     } finally {
-      setLoading(false);
+      setBusy(null);
     }
-  };
+  }
+
+  const panel = (id: RightTab) => ({
+    role: "tabpanel" as const,
+    id: panelId(id),
+    "aria-labelledby": tabId(id),
+    hidden: activeTab !== id,
+    className: "tabpanel",
+  });
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "#090d16",
-        color: "#f8fafc",
-        overflow: "hidden",
-      }}
-    >
-      {/* Top Navbar */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "10px 20px",
-          backgroundColor: "#0f172a",
-          borderBottom: "1px solid #1e293b",
-          zIndex: 40,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 24 }}>🧠</span>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: 0.5, color: "#f8fafc" }}>
-              Déjà <span style={{ fontSize: 11, fontWeight: 500, color: "#38bdf8" }}>ProofOps v1.1</span>
-            </div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>
-              On-Call Incident Copilot with Graph Memory & Evidence Shock Lab
-            </div>
-          </div>
-          <span
-            style={{
-              marginLeft: 12,
-              fontSize: 10,
-              fontWeight: 700,
-              padding: "2px 8px",
-              borderRadius: 999,
-              backgroundColor: "rgba(34, 197, 94, 0.15)",
-              color: "#4ade80",
-              border: "1px solid #22c55e",
-            }}
-          >
-            ● GRAPH ENGINE CONNECTED
-          </span>
-        </div>
+    <div className="app">
+      <TopBar
+        health={health}
+        onRecheckHealth={health.reload}
+        sessionId={sessionId}
+        busy={busy}
+        onWipeSession={wipeSession}
+        onResetDemo={resetDemo}
+      />
 
-        {/* Action Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            onClick={() => setActiveTab("risk")}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              backgroundColor: activeTab === "risk" ? "#0284c7" : "#1e293b",
-              color: activeTab === "risk" ? "#ffffff" : "#cbd5e1",
-              border: `1px solid ${activeTab === "risk" ? "#38bdf8" : "#334155"}`,
-              cursor: "pointer",
-            }}
-          >
-            ⚠️ Risk Map
-          </button>
-
-          <button
-            onClick={handleTriggerAlert}
-            disabled={loading}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              backgroundColor: "#be123c",
-              color: "#ffffff",
-              border: "1px solid #f43f5e",
-              cursor: "pointer",
-            }}
-          >
-            🚨 Trigger Checkout Alert
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab("shock");
-              if (activeIncidentId) {
-                runShockAnalysis(activeIncidentId);
-              } else {
-                handleTriggerAlert();
-              }
-            }}
-            disabled={loading}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              backgroundColor: activeTab === "shock" ? "#7e22ce" : "#1e293b",
-              color: activeTab === "shock" ? "#ffffff" : "#cbd5e1",
-              border: `1px solid ${activeTab === "shock" ? "#c084fc" : "#334155"}`,
-              cursor: "pointer",
-            }}
-          >
-            ⚡ Evidence Shock Lab
-          </button>
-
-          <button
-            onClick={handleReset}
-            disabled={loading}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 6,
-              fontSize: 12,
-              backgroundColor: "#1e293b",
-              color: "#94a3b8",
-              border: "1px solid #334155",
-              cursor: "pointer",
-            }}
-            title="Reset to clean seed state"
-          >
-            ↺ Reset
-          </button>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Left / Center: Interactive Force Graph */}
-        <div style={{ flex: 1, position: "relative", height: "100%", overflow: "hidden" }}>
-          <GraphView
-            payload={currentGraph}
-            onNodeClick={handleNodeClick}
-            focusIds={focusIds}
-            height="100%"
+      <main className="workspace">
+        <section className="pane pane-chat" aria-label="Chat">
+          <Chat
+            sessionId={sessionId}
+            messages={messages}
+            dispatch={dispatch}
+            onChatResponse={handleChatResponse}
+            onOpenIncident={openIncident}
+            onRequestFailed={health.reload}
           />
-        </div>
+        </section>
 
-        {/* Right Side: Tabbed Panel (Risk vs Shock) */}
-        <div
-          style={{
-            width: 460,
-            borderLeft: "1px solid #1e293b",
-            display: "flex",
-            flexDirection: "column",
-            backgroundColor: "#0b0f19",
-            height: "100%",
-          }}
-        >
-          {/* Panel Tab Switcher */}
-          <div
-            style={{
-              display: "flex",
-              borderBottom: "1px solid #1e293b",
-              backgroundColor: "#0f172a",
-            }}
-          >
-            <button
-              onClick={() => setActiveTab("risk")}
-              style={{
-                flex: 1,
-                padding: "10px",
-                border: "none",
-                borderBottom: activeTab === "risk" ? "2px solid #38bdf8" : "2px solid transparent",
-                backgroundColor: activeTab === "risk" ? "#090d16" : "transparent",
-                color: activeTab === "risk" ? "#f8fafc" : "#94a3b8",
-                fontWeight: 600,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              📊 System Risk & Blast
-            </button>
-            <button
-              onClick={() => setActiveTab("shock")}
-              style={{
-                flex: 1,
-                padding: "10px",
-                border: "none",
-                borderBottom: activeTab === "shock" ? "2px solid #c084fc" : "2px solid transparent",
-                backgroundColor: activeTab === "shock" ? "#090d16" : "transparent",
-                color: activeTab === "shock" ? "#f8fafc" : "#94a3b8",
-                fontWeight: 600,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              ⚡ Shock Lab (ProofOps)
-            </button>
-          </div>
-
-          {/* Active Tab Component */}
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            {activeTab === "risk" ? (
-              <RiskPanel
-                onGraph={handleGraphUpdate}
-                onSelectService={(svc) => setFocusIds([`svc:${svc}`])}
-              />
+        <section className="pane pane-graph" aria-label="Graph">
+          <h2 className="pane-title">Incident graph</h2>
+          <div className="graph-host">
+            {graph ? (
+              <GraphView payload={graph} focusIds={focusIds} />
             ) : (
-              <ShockViz shock={shockData} onSelectSource={handleSelectShockSource} />
+              <div className="state graph-empty">
+                <p>No graph yet.</p>
+                <p>Send an alert in chat or pick an incident, and the graph the backend returns will appear here.</p>
+              </div>
             )}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Bottom Status Bar */}
-      <footer
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "6px 16px",
-          backgroundColor: "#090d16",
-          borderTop: "1px solid #1e293b",
-          fontSize: 11,
-          color: "#94a3b8",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "#38bdf8" }}>▶</span>
-          <span>{actionNotice}</span>
-        </div>
-        <div style={{ display: "flex", gap: 14 }}>
-          {activeIncidentId && <span>Active Incident: <strong style={{ color: "#f8fafc" }}>{activeIncidentId}</strong></span>}
-          <span>Nodes: <strong style={{ color: "#f8fafc" }}>{currentGraph?.nodes?.length || 0}</strong></span>
-          <span>Edges: <strong style={{ color: "#f8fafc" }}>{currentGraph?.edges?.length || 0}</strong></span>
-        </div>
-      </footer>
+        <aside className="pane pane-side" aria-label="Details">
+          <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} label="Details" />
+          {/* All panels stay mounted (hidden, not unmounted) so switching tabs keeps their state. */}
+          <div {...panel("risk")}>
+            {/* Rithvik's RiskPanel: fetches /graph/risk itself and pushes the risk graph to the centre via onGraph. */}
+            <RiskPanel key={riskEpoch} onGraph={setGraph} onSelectService={(svc) => setFocusIds([`svc:${svc}`])} />
+          </div>
+          <div {...panel("incident")}>
+            <IncidentPanel
+              selectedIncidentId={selectedIncidentId}
+              onSelectIncident={setSelectedIncidentId}
+              refreshToken={incidentRefresh}
+              onGraphChange={setGraph}
+              onNotify={notify}
+              catalog={catalog}
+            />
+          </div>
+          <div {...panel("stress")}>
+            <StressTestPanel
+              incidentId={selectedIncidentId}
+              active={activeTab === "stress"}
+              shock={shock && shock.incidentId === selectedIncidentId ? shock.result : null}
+              onShockResult={(incidentId, result) => setShock(result ? { incidentId, result } : null)}
+              onGraphChange={setGraph}
+              onNotify={notify}
+            />
+          </div>
+          <div {...panel("owners")}>
+            <OwnersPanel catalog={catalog} refreshToken={ownersRefresh} onNotify={notify} />
+          </div>
+        </aside>
+      </main>
+
+      <ToastViewport toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }
