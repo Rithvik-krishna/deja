@@ -36,6 +36,9 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
   const [messages, dispatch] = useReducer(chatReducer, []);
   // The graph the centre panel should show. Set by chat replies, picking an incident, and recording an outcome.
   const [graph, setGraph] = useState<GraphPayload | null>(null);
+  const [graphMode, setGraphMode] = useState<"topology" | "evidence">("topology");
+  const [topologyGraph, setTopologyGraph] = useState<GraphPayload | null>(null);
+  const [evidenceGraph, setEvidenceGraph] = useState<GraphPayload | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   // Node ids GraphView should emphasise (set by the Risk table when a service is picked).
   const [focusIds, setFocusIds] = useState<string[]>([]);
@@ -63,9 +66,56 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
   const healthRef = useRef(health);
   healthRef.current = health;
 
+  const updateGraph = useCallback((newGraph: GraphPayload | null) => {
+    setGraph(newGraph);
+    if (!newGraph) {
+      setTopologyGraph(null);
+      setEvidenceGraph(null);
+      return;
+    }
+    const isEvidence = newGraph.nodes.some(
+      (n) => n.label.toLowerCase().includes("evidence") || n.id.startsWith("ev:")
+    );
+    if (isEvidence) {
+      setEvidenceGraph(newGraph);
+    } else {
+      setTopologyGraph(newGraph);
+    }
+  }, []);
+
+  const handleGraphModeChange = useCallback(
+    async (mode: "topology" | "evidence") => {
+      setGraphMode(mode);
+      if (mode === "evidence") {
+        if (!evidenceGraph && selectedIncidentId) {
+          try {
+            const hyp = await api.hypotheses(selectedIncidentId);
+            if (hyp.graph && hyp.graph.nodes.length > 0) {
+              setEvidenceGraph(hyp.graph);
+            }
+          } catch {
+            // keep current graph if hypotheses fetch fails
+          }
+        }
+      } else {
+        if (!topologyGraph && selectedIncidentId) {
+          try {
+            const inc = await api.incident(selectedIncidentId);
+            if (inc.graph && inc.graph.nodes.length > 0) {
+              setTopologyGraph(inc.graph);
+            }
+          } catch {
+            // keep current graph if incident fetch fails
+          }
+        }
+      }
+    },
+    [evidenceGraph, topologyGraph, selectedIncidentId]
+  );
+
   const handleChatResponse = useCallback((res: ChatResponse) => {
     if (healthRef.current.error) healthRef.current.reload();
-    if (res.graph) setGraph(res.graph);
+    if (res.graph) updateGraph(res.graph);
     if (res.incident_id) setSelectedIncidentId(res.incident_id);
     if (res.incident_id || res.tool_calls.length > 0) setIncidentRefresh((n) => n + 1);
     if (res.intent === STRESS_TEST_INTENT) setActiveTab("stress");
@@ -77,7 +127,7 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
       const svc = reassign.args.service;
       if (typeof svc === "string") setOwnersFocus((f) => ({ service: svc, seq: (f?.seq ?? 0) + 1 }));
     }
-  }, [reloadCatalog]);
+  }, [reloadCatalog, updateGraph]);
 
   const openIncident = useCallback((id: string) => {
     setSelectedIncidentId(id);
@@ -110,6 +160,9 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
     dispatch({ type: "cleared" });
     setSessionId(newSessionId());
     setGraph(null);
+    setTopologyGraph(null);
+    setEvidenceGraph(null);
+    setGraphMode("topology");
     setFocusIds([]);
     setRiskEpoch((n) => n + 1);
     setShock(null);
@@ -157,6 +210,8 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
     className: "tabpanel",
   });
 
+  const activeGraph = graphMode === "evidence" ? (evidenceGraph || graph) : (topologyGraph || graph);
+
   return (
     <div className="app">
       <TopBar
@@ -186,10 +241,62 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
         </section>
 
         <section className="pane pane-graph" aria-label="Graph">
-          <h2 className="pane-title">Incident graph</h2>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--border)",
+              paddingRight: 8,
+            }}
+          >
+            <h2 className="pane-title" style={{ borderBottom: "none" }}>Incident graph</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button
+                type="button"
+                className={`btn btn-small ${graphMode === "topology" ? "btn-primary" : ""}`}
+                style={{ fontSize: 11, padding: "3px 8px" }}
+                onClick={() => handleGraphModeChange("topology")}
+                title="Service architecture & dependencies"
+              >
+                🌐 Topology
+              </button>
+              <button
+                type="button"
+                className={`btn btn-small ${graphMode === "evidence" ? "btn-primary" : ""}`}
+                style={{ fontSize: 11, padding: "3px 8px" }}
+                onClick={() => handleGraphModeChange("evidence")}
+                title="Hypotheses & counterfactual evidence perturbation"
+              >
+                ⚡ Evidence Graph
+              </button>
+            </div>
+          </div>
           <div className="graph-host">
-            {graph ? (
-              <GraphView payload={graph} focusIds={focusIds} />
+            {activeGraph ? (
+              <GraphView
+                payload={activeGraph}
+                focusIds={focusIds}
+                catalogServices={catalog.data?.services}
+                graphMode={graphMode}
+                onGraphModeChange={handleGraphModeChange}
+                onAskChat={(prompt) => {
+                  chatSender.current?.send(prompt);
+                }}
+                onViewOwners={(svc) => {
+                  setActiveTab("owners");
+                  setOwnersFocus({ service: svc, seq: Date.now() });
+                }}
+                onStressTest={() => {
+                  setActiveTab("stress");
+                  handleGraphModeChange("evidence");
+                }}
+                onNodeClick={(node) => {
+                  if (node.label.toLowerCase().includes("service")) {
+                    setFocusIds([node.id]);
+                  }
+                }}
+              />
             ) : (
               <div className="state graph-empty">
                 <p>No graph yet.</p>
@@ -204,14 +311,14 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
           {/* All panels stay mounted (hidden, not unmounted) so switching tabs keeps their state. */}
           <div {...panel("risk")}>
             {/* Rithvik's RiskPanel: fetches /graph/risk itself and pushes the risk graph to the centre via onGraph. */}
-            <RiskPanel key={riskEpoch} onGraph={setGraph} onSelectService={(svc) => setFocusIds([`svc:${svc}`])} />
+            <RiskPanel key={riskEpoch} onGraph={updateGraph} onSelectService={(svc) => setFocusIds([`svc:${svc}`])} />
           </div>
           <div {...panel("incident")}>
             <IncidentPanel
               selectedIncidentId={selectedIncidentId}
               onSelectIncident={setSelectedIncidentId}
               refreshToken={incidentRefresh}
-              onGraphChange={setGraph}
+              onGraphChange={updateGraph}
               onNotify={notify}
               catalog={catalog}
             />
@@ -222,7 +329,7 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
               active={activeTab === "stress"}
               shock={shock && shock.incidentId === selectedIncidentId ? shock.result : null}
               onShockResult={(incidentId, result) => setShock(result ? { incidentId, result } : null)}
-              onGraphChange={setGraph}
+              onGraphChange={updateGraph}
               onNotify={notify}
               controllerRef={stressController}
             />

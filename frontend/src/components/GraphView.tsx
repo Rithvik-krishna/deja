@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
-import type { GraphNode, GraphPayload } from "../api/client";
+import type { CatalogService, GraphNode, GraphPayload } from "../api/client";
 import GraphLegend from "./graph/GraphLegend";
 import GraphSettingsPanel from "./graph/GraphSettingsPanel";
 import GraphTooltip from "./graph/GraphTooltip";
+import ServiceInspector from "./graph/ServiceInspector";
 import "./graph/obsidian-graph.css";
 import { drawLink, drawNode, getNodeKind } from "./graph/renderers";
 import {
@@ -18,6 +19,12 @@ export interface GraphViewProps {
   onNodeClick?: (node: GraphNode) => void;
   focusIds?: string[];
   height?: number | string;
+  onAskChat?: (prompt: string) => void;
+  onViewOwners?: (serviceName: string) => void;
+  onStressTest?: () => void;
+  catalogServices?: CatalogService[];
+  graphMode?: "topology" | "evidence";
+  onGraphModeChange?: (mode: "topology" | "evidence") => void;
 }
 
 interface ViewHistoryItem {
@@ -30,22 +37,31 @@ export default function GraphView({
   onNodeClick,
   focusIds = [],
   height = "100%",
+  onAskChat,
+  onViewOwners,
+  onStressTest,
+  catalogServices,
+  graphMode = "topology",
+  onGraphModeChange,
 }: GraphViewProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const fgRef = useRef<any>(null);
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hoveredNode, setHoveredNode] = useState<VisualNode | null>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Obsidian graph settings
   const [settings, setSettings] = useState<GraphSettings>({ ...DEFAULT_GRAPH_SETTINGS });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [legendVisible, setLegendVisible] = useState(true);
 
-  // View navigation history for Obsidian Back / Forward buttons
+  // View navigation history for Back / Forward buttons
   const [history, setHistory] = useState<ViewHistoryItem[]>([{ focusIds: [], label: "Initial view" }]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const isNavigatingRef = useRef(false);
@@ -60,6 +76,18 @@ export default function GraphView({
 
   // Top suspect memory to detect rank flips
   const prevTopServiceRef = useRef<string | null>(null);
+
+  // Sync external focusIds with selectedNode
+  useEffect(() => {
+    if (focusIds.length === 1 && payload?.nodes) {
+      const match = payload.nodes.find(
+        (n) => n.id === focusIds[0] || n.name === focusIds[0].replace(/^svc:/, "")
+      );
+      if (match) {
+        setSelectedNode(match);
+      }
+    }
+  }, [focusIds, payload]);
 
   // Measure container dimensions
   useEffect(() => {
@@ -99,6 +127,21 @@ export default function GraphView({
     const currentFocus = history[historyIndex]?.focusIds ?? focusIds;
     const focusSet = new Set(currentFocus);
 
+    // Connected neighbors when a node is selected
+    const selectedId = selectedNode?.id;
+    const connectedNodeIds = new Set<string>();
+    const connectedEdgeIds = new Set<string>();
+    if (selectedId) {
+      connectedNodeIds.add(selectedId);
+      (payload.edges || []).forEach((e) => {
+        if (e.source === selectedId || e.target === selectedId) {
+          connectedEdgeIds.add(e.id);
+          connectedNodeIds.add(String(e.source));
+          connectedNodeIds.add(String(e.target));
+        }
+      });
+    }
+
     // Identify Service scores to detect top rank flips and near ties (within 0.25)
     const serviceNodes = payload.nodes
       .filter((n) => getNodeKind(n.label) === "Service")
@@ -123,7 +166,10 @@ export default function GraphView({
     const visualNodes: VisualNode[] = payload.nodes.map((node) => {
       const kind = getNodeKind(node.label);
       const isGhost = kind === "Evidence" && Boolean(node.props?.removed);
-      const isFocused = focusSet.has(node.id);
+      const isSelected = selectedId === node.id;
+      const isNeighbor = Boolean(selectedId && connectedNodeIds.has(node.id));
+      const isFocused = focusSet.has(node.id) || isSelected;
+      const isHighlight = Boolean(node.highlight || isFocused || isNeighbor);
 
       // Score animation tracking for Service nodes
       const currentScore = node.score ?? 0;
@@ -153,7 +199,8 @@ export default function GraphView({
         kind,
         isGhost,
         isFocused,
-        pulse: pulseFlag && (node.highlight || isFocused),
+        highlight: isHighlight,
+        pulse: pulseFlag && (isHighlight || isFocused),
         animScore,
         x: cached?.x,
         y: cached?.y,
@@ -170,23 +217,65 @@ export default function GraphView({
         (edge.type === "SUPPORTS" &&
           (ghostNodeIds.has(String(edge.source)) || Boolean(edge.props?.removed)));
 
+      const isEdgeSelected = Boolean(selectedId && connectedEdgeIds.has(edge.id));
+      const highlight = Boolean(edge.highlight || isEdgeSelected);
+
       return {
         ...edge,
         isGhost,
+        highlight,
       };
     });
 
     const anyHighlight =
-      visualNodes.some((n) => n.highlight) ||
+      visualNodes.some((n) => n.highlight || n.isFocused) ||
       visualLinks.some((l) => l.highlight) ||
-      focusSet.size > 0;
+      focusSet.size > 0 ||
+      Boolean(selectedId);
 
     return {
       graphData: { nodes: visualNodes, links: visualLinks },
       hasHighlights: anyHighlight,
       shouldPulse: pulseFlag,
     };
-  }, [payload, focusIds, history, historyIndex]);
+  }, [payload, focusIds, history, historyIndex, selectedNode]);
+
+  // Matching services for search autocomplete
+  const matchingServices = useMemo(() => {
+    if (!payload?.nodes || !searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return payload.nodes
+      .filter((n) => {
+        const name = (n.name || n.id).toLowerCase();
+        return name.includes(q) || n.id.toLowerCase().includes(q);
+      })
+      .slice(0, 8);
+  }, [payload?.nodes, searchQuery]);
+
+  const handleSelectSearchedService = (targetNode: GraphNode) => {
+    setSelectedNode(targetNode);
+    setSearchQuery("");
+    setIsSearchFocused(false);
+    onNodeClick?.(targetNode);
+
+    // Center on selected node
+    const matched = graphData.nodes.find((n) => n.id === targetNode.id);
+    if (matched && typeof matched.x === "number" && typeof matched.y === "number" && fgRef.current) {
+      fgRef.current.centerAt(matched.x, matched.y, 600);
+      fgRef.current.zoom(2.4, 600);
+    }
+
+    // Push into navigation history
+    setHistory((prev) => {
+      const next = prev.slice(0, historyIndex + 1);
+      next.push({
+        focusIds: [targetNode.id],
+        label: targetNode.name || targetNode.id,
+      });
+      return next;
+    });
+    setHistoryIndex((prev) => prev + 1);
+  };
 
   // Track incoming focusIds into view navigation history
   useEffect(() => {
@@ -227,7 +316,6 @@ export default function GraphView({
           if (anim) {
             const elapsed = nowTime - anim.startTime;
             const progress = Math.min(1, Math.max(0, elapsed / 400));
-            // easeOutQuad
             const ease = 1 - (1 - progress) * (1 - progress);
             node.animScore = anim.startScore + (anim.targetScore - anim.startScore) * ease;
             if (progress < 1) {
@@ -314,7 +402,6 @@ export default function GraphView({
       }
     }
 
-    // Reheat simulation smoothly without node scrambling
     fg.d3ReheatSimulation();
   }, [
     settings.repulsion,
@@ -364,8 +451,9 @@ export default function GraphView({
     }
   };
 
-  // Node click with history push
+  // Node click with history push & inspector opening
   const handleInternalNodeClick = (node: GraphNode) => {
+    setSelectedNode(node);
     onNodeClick?.(node);
 
     // Push into navigation history
@@ -417,30 +505,32 @@ export default function GraphView({
         borderRadius: 8,
       }}
     >
-      {/* Minimal Obsidian Header */}
+      {/* Sleek Obsidian-style Header Bar */}
       <div
         style={{
           position: "absolute",
-          top: 14,
-          left: 16,
-          right: 16,
+          top: 12,
+          left: 14,
+          right: 14,
           zIndex: 25,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: 10,
           pointerEvents: "none",
+          flexWrap: "wrap",
         }}
       >
-        {/* Left: Back / Forward & Graph title */}
+        {/* Left: History navigation & Mode Switch */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             pointerEvents: "auto",
           }}
         >
-          {/* Navigation Controls */}
+          {/* Navigation History Controls */}
           <div
             style={{
               display: "flex",
@@ -481,23 +571,58 @@ export default function GraphView({
             </button>
           </div>
 
-          {/* Minimal Title */}
-          <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 600,
-              fontFamily: "system-ui, -apple-system, sans-serif",
-              color: "#f8fafc",
-              margin: 0,
-              letterSpacing: "-0.03em",
-              textShadow: "0 2px 8px rgba(0, 0, 0, 0.7)",
-            }}
-          >
-            Graph view
-          </h1>
+          {/* Dual Graph Mode Toggle */}
+          {onGraphModeChange && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "rgba(15, 23, 42, 0.8)",
+                border: "1px solid rgba(51, 65, 85, 0.6)",
+                borderRadius: 8,
+                padding: 2,
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <button
+                onClick={() => onGraphModeChange("topology")}
+                style={{
+                  background: graphMode === "topology" ? "rgba(37, 99, 235, 0.6)" : "transparent",
+                  color: graphMode === "topology" ? "#ffffff" : "#94a3b8",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "4px 9px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                title="Service architecture & blast radius"
+              >
+                🌐 Topology
+              </button>
+              <button
+                onClick={() => onGraphModeChange("evidence")}
+                style={{
+                  background: graphMode === "evidence" ? "rgba(126, 34, 206, 0.6)" : "transparent",
+                  color: graphMode === "evidence" ? "#ffffff" : "#94a3b8",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "4px 9px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                title="Hypotheses & counterfactual evidence perturbation"
+              >
+                ⚡ Evidence Graph
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Right: Toggle Settings & Overflow menu */}
+        {/* Right: Search, Zoom Controls, Settings & Overflow */}
         <div
           style={{
             display: "flex",
@@ -507,15 +632,150 @@ export default function GraphView({
             position: "relative",
           }}
         >
-          {/* Toggle Settings Button (visible if panel closed or for quick toggling) */}
+          {/* Service Search Input with Autocomplete */}
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              placeholder="Search service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+              style={{
+                width: 150,
+                height: 28,
+                padding: "0 8px 0 24px",
+                fontSize: 11,
+                borderRadius: 6,
+                backgroundColor: "rgba(15, 23, 42, 0.8)",
+                border: "1px solid rgba(51, 65, 85, 0.7)",
+                color: "#f8fafc",
+                outline: "none",
+              }}
+            />
+            <span style={{ position: "absolute", left: 7, top: 6, fontSize: 11, color: "#64748b" }}>🔍</span>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  top: 6,
+                  background: "transparent",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  padding: 0,
+                }}
+              >
+                ✕
+              </button>
+            )}
+
+            {/* Dropdown Autocomplete */}
+            {isSearchFocused && matchingServices.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 32,
+                  right: 0,
+                  width: 200,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  backgroundColor: "rgba(15, 23, 42, 0.96)",
+                  border: "1px solid rgba(56, 189, 248, 0.4)",
+                  borderRadius: 8,
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.7)",
+                  backdropFilter: "blur(12px)",
+                  zIndex: 50,
+                  padding: "4px 0",
+                }}
+              >
+                {matchingServices.map((node) => (
+                  <div
+                    key={node.id}
+                    onMouseDown={() => handleSelectSearchedService(node)}
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: 11,
+                      color: "#e2e8f0",
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(56, 189, 248, 0.2)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <span style={{ fontWeight: 600 }}>{node.name || node.id}</span>
+                    <span style={{ fontSize: 9, color: "#94a3b8" }}>{node.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Zoom & Reset Buttons */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: "rgba(15, 23, 42, 0.75)",
+              border: "1px solid rgba(51, 65, 85, 0.6)",
+              borderRadius: 8,
+              padding: "2px 4px",
+              backdropFilter: "blur(8px)",
+              gap: 2,
+            }}
+          >
+            <button
+              onClick={() => fgRef.current?.zoom((fgRef.current.zoom() || 1) * 1.3, 300)}
+              className="obsidian-icon-btn"
+              title="Zoom in"
+              aria-label="Zoom in"
+              style={{ width: 26, height: 26, fontSize: 14 }}
+            >
+              +
+            </button>
+            <button
+              onClick={() => fgRef.current?.zoom((fgRef.current.zoom() || 1) / 1.3, 300)}
+              className="obsidian-icon-btn"
+              title="Zoom out"
+              aria-label="Zoom out"
+              style={{ width: 26, height: 26, fontSize: 14 }}
+            >
+              −
+            </button>
+            <button
+              onClick={handleFitScreen}
+              className="obsidian-icon-btn"
+              title="Fit graph to viewport"
+              aria-label="Fit graph to viewport"
+              style={{ width: 26, height: 26, fontSize: 12 }}
+            >
+              ⛶
+            </button>
+            <button
+              onClick={handleResetView}
+              className="obsidian-icon-btn"
+              title="Reset view"
+              aria-label="Reset view"
+              style={{ width: 26, height: 26, fontSize: 12 }}
+            >
+              🎯
+            </button>
+          </div>
+
+          {/* Toggle Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             className="obsidian-icon-btn"
             title={isSettingsOpen ? "Hide graph settings" : "Open graph settings"}
             aria-label={isSettingsOpen ? "Hide graph settings" : "Open graph settings"}
             style={{
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               backgroundColor: isSettingsOpen ? "rgba(37, 99, 235, 0.25)" : "rgba(15, 23, 42, 0.75)",
               border: `1px solid ${isSettingsOpen ? "#3b82f6" : "rgba(51, 65, 85, 0.6)"}`,
               borderRadius: 8,
@@ -523,7 +783,7 @@ export default function GraphView({
               backdropFilter: "blur(8px)",
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="4" y1="21" x2="4" y2="14" />
               <line x1="4" y1="10" x2="4" y2="3" />
               <line x1="12" y1="21" x2="12" y2="12" />
@@ -543,15 +803,15 @@ export default function GraphView({
             title="Graph view options"
             aria-label="Graph view options"
             style={{
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               backgroundColor: isOverflowMenuOpen ? "rgba(51, 65, 85, 0.85)" : "rgba(15, 23, 42, 0.75)",
               border: "1px solid rgba(51, 65, 85, 0.6)",
               borderRadius: 8,
               backdropFilter: "blur(8px)",
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="5" r="2" />
               <circle cx="12" cy="12" r="2" />
               <circle cx="12" cy="19" r="2" />
@@ -563,7 +823,7 @@ export default function GraphView({
             <div
               style={{
                 position: "absolute",
-                top: 40,
+                top: 38,
                 right: 0,
                 zIndex: 40,
                 backgroundColor: "rgba(15, 23, 42, 0.96)",
@@ -707,6 +967,7 @@ export default function GraphView({
             ctx.fill();
           }}
           onNodeClick={(node: any) => handleInternalNodeClick(node as GraphNode)}
+          onBackgroundClick={() => setSelectedNode(null)}
           onNodeHover={(node: any) => setHoveredNode(node as VisualNode | null)}
           onEngineTick={handleEngineTick}
           onNodeDragEnd={handleNodeDragEnd}
@@ -736,6 +997,32 @@ export default function GraphView({
 
       {/* Hover Node Tooltip Card */}
       <GraphTooltip node={hoveredNode} x={mousePos.x} y={mousePos.y} />
+
+      {/* Floating Service Details Inspector */}
+      {selectedNode && getNodeKind(selectedNode.label) === "Service" && (
+        <ServiceInspector
+          serviceName={selectedNode.name || selectedNode.id.replace(/^svc:/, "")}
+          node={selectedNode}
+          edges={payload?.edges || []}
+          nodes={payload?.nodes || []}
+          catalogService={catalogServices?.find(
+            (s) => s.name === (selectedNode.name || selectedNode.id.replace(/^svc:/, ""))
+          )}
+          onFocus={(svc) => {
+            const target = graphData.nodes.find(
+              (n) => n.name === svc || n.id === `svc:${svc}` || n.id === svc
+            );
+            if (target && target.x !== undefined && target.y !== undefined && fgRef.current) {
+              fgRef.current.centerAt(target.x, target.y, 600);
+              fgRef.current.zoom(2.4, 600);
+            }
+          }}
+          onAskChat={onAskChat}
+          onViewOwners={onViewOwners}
+          onStressTest={onStressTest}
+          onClose={() => setSelectedNode(null)}
+        />
+      )}
     </div>
   );
 }

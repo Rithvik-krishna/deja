@@ -87,9 +87,9 @@ export function getEdgeStyle(
   switch (type) {
     case "DEPENDS_ON":
       return {
-        color: highlight ? "#38bdf8" : `rgba(56, 189, 248, ${baseAlpha})`,
+        color: highlight ? "#38bdf8" : `rgba(71, 85, 105, ${baseAlpha * 0.75})`,
         dash: [],
-        width: highlight ? 2.5 : 1.5,
+        width: highlight ? 2.8 : 1.4,
         arrow: true,
       };
 

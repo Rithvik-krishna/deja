@@ -86,11 +86,19 @@ export function drawNode(
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
   }
 
-  ctx.fillStyle = baseStyle.fill;
+  // Fill with radial gradient for depth on active services
+  if (node.kind === "Service" && !isGhost) {
+    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+    grad.addColorStop(0, node.highlight ? "#38bdf8" : "#0ea5e9");
+    grad.addColorStop(1, node.highlight ? "#0284c7" : "#035388");
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = baseStyle.fill;
+  }
   ctx.fill();
 
   // Stroke
-  ctx.lineWidth = node.highlight ? 2.8 : 1.5;
+  ctx.lineWidth = node.highlight ? 2.5 : 1.5;
   ctx.strokeStyle = node.highlight ? "#ffffff" : baseStyle.stroke;
   if (isGhost) {
     ctx.setLineDash([3, 3]);
@@ -98,6 +106,17 @@ export function drawNode(
     ctx.setLineDash([]);
   }
   ctx.stroke();
+
+  // Outer focus/selection aura ring
+  if ((node.isFocused || node.highlight) && !isDimmed) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 4.5, 0, 2 * Math.PI);
+    ctx.strokeStyle = node.isFocused ? "#38bdf8" : "rgba(56, 189, 248, 0.6)";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   // Reset shadow for badges and text
   ctx.shadowColor = "transparent";
