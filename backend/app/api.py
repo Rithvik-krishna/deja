@@ -90,3 +90,25 @@ def chat(req: ChatRequest):
 def sessions_wipe(req: WipeRequest):
     """Clears short-term chat state only. Graph memory is untouched - that is the point of the demo."""
     return WipeResponse(session_id=req.session_id, wiped=chat_mod.wipe_session(req.session_id))
+
+
+# ---------- Evidence Shock Lab (ProofOps layer) ----------
+
+@router.post("/insights/evidence-shock", response_model=EvidenceShockResponse, tags=["insights"])
+def evidence_shock(incident_id: str, service: str, symptom: Symptom):
+    """Stress-test the incident diagnosis.
+
+    Returns all candidate hypotheses with their evidence breakdown, then simulates
+    removing each piece of evidence and shows how suspect scores change.
+    F(e) ranks which single observation is most critical to the current diagnosis.
+    """
+    return get_engine().evidence_shock(incident_id, service, symptom)
+
+
+@router.get("/insights/hypotheses/{incident_id}", response_model=HypothesisResponse, tags=["insights"])
+def hypotheses(incident_id: str):
+    """Return ranked hypotheses with evidence breakdown for an existing incident.
+
+    Does not require re-specifying service/symptom — derives them from the incident record.
+    """
+    return get_engine().hypotheses(incident_id)

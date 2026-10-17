@@ -436,6 +436,101 @@ class MockEngine(Engine):
         return sorted(ev, key=lambda e: e.ts)
 
 
+    # ------------------------------------------------------------------ evidence shock (ProofOps layer)
+    def _build_raw_suspects(self, service, symptom, t):
+        """Convert live suspects into RawSuspect inputs for the shock engine."""
+        from .evidence_shock import RawSuspect as RS
+        cands = {service: 0, **self._bfs(service, self.fwd, 3)}
+        raw = []
+        for name, hops in cands.items():
+            recent = self._recent_deploys(name, t, SUSPECT_WINDOW_HOURS)
+            same = sum(1 for i in self.incidents.values() if i["origin"] == name and i["symptom"] == symptom
+                       and (name == service or service in i["impacted"]))
+            deploy_id = recent[0]["id"] if recent else None
+            raw.append(RS(service=name, hops=hops, has_recent_deploy=bool(recent),
+                          same_symptom_incidents=same, deploy_id=deploy_id,
+                          owner=self._owner_name(name)))
+        return raw
+
+    def evidence_shock(self, incident_id, service, symptom):
+        from .evidence_shock import run_shock, RawSuspect as RS
+        inc = self._need_incident(incident_id)
+        t = now()
+        raw = self._build_raw_suspects(service, symptom, t)
+        analysis = run_shock(incident_id, service, symptom, raw)
+
+        # Build HypothesisItem list (with shock_sensitivity rolled up per suspect)
+        sens_map: dict[str, float] = {}
+        for sc in analysis.scenarios:
+            for d in sc.suspect_deltas:
+                if abs(d["delta"]) > 0:
+                    sens_map[d["service"]] = round(
+                        sens_map.get(d["service"], 0.0) + sc.impact_score * abs(d["delta"]), 4)
+
+        hyps = []
+        for s in analysis.suspects:
+            evs = [EvidenceItem(evidence_id=c.evidence_id, evidence_type=c.evidence_type,
+                                description=c.description, weight=c.weight,
+                                source=c.source, suspect=s.service)
+                   for c in s.contribs]
+            hyps.append(HypothesisItem(service=s.service, hops=s.hops, score=s.score,
+                                       rank=s.rank, owner=s.owner, evidence=evs,
+                                       shock_sensitivity=sens_map.get(s.service, 0.0)))
+
+        # Build graph: highlight the critical evidence path
+        g = _G()
+        self._incident_graph(g, inc, True)
+        self._svc_node(g, service, True)
+        top = analysis.suspects[0].service if analysis.suspects else service
+        path = self._path(service, top)
+        for a, b in zip(path, path[1:]):
+            self._svc_node(g, a, True)
+            self._svc_node(g, b, True)
+            g.edge(svc_id(a), svc_id(b), "DEPENDS_ON", True)
+        for s in analysis.suspects[:4]:
+            self._svc_node(g, s.service, s.service == top, s.score)
+
+        scenarios_out = [
+            ShockScenarioResult(
+                evidence_id=sc.evidence_id, evidence_type=sc.evidence_type,
+                description=sc.description, impact_score=sc.impact_score,
+                top_suspect_before=sc.top_suspect_before,
+                top_suspect_after=sc.top_suspect_after,
+                diagnosis_changed=sc.diagnosis_changed, is_critical=sc.is_critical,
+                suspect_deltas=sc.suspect_deltas,
+            )
+            for sc in analysis.scenarios
+        ]
+        return EvidenceShockResponse(
+            incident_id=incident_id, service=service, symptom=symptom,
+            hypotheses=hyps, scenarios=scenarios_out,
+            critical_evidence=analysis.critical_evidence,
+            diagnosis_robust=analysis.diagnosis_robust,
+            robustness_note=analysis.robustness_note,
+            graph=g.payload(),
+        )
+
+    def hypotheses(self, incident_id):
+        inc = self._need_incident(incident_id)
+        service = inc["impacted"][0] if inc["impacted"] else inc["origin"]
+        symptom = inc["symptom"]
+        t = now()
+        raw = self._build_raw_suspects(service, symptom, t)
+        from .evidence_shock import run_shock
+        analysis = run_shock(incident_id, service, symptom, raw)
+        hyps = []
+        for s in analysis.suspects:
+            evs = [EvidenceItem(evidence_id=c.evidence_id, evidence_type=c.evidence_type,
+                                description=c.description, weight=c.weight,
+                                source=c.source, suspect=s.service)
+                   for c in s.contribs]
+            hyps.append(HypothesisItem(service=s.service, hops=s.hops, score=s.score,
+                                       rank=s.rank, owner=s.owner, evidence=evs))
+        return HypothesisResponse(incident_id=incident_id, hypotheses=hyps,
+                                  diagnosis_robust=analysis.diagnosis_robust,
+                                  robustness_note=analysis.robustness_note)
+
+
 def _neg(s):
     """Sort helper: newer ISO timestamps first when used in an ascending sort."""
     return "".join(chr(0x10FFFF - ord(c)) for c in s)
