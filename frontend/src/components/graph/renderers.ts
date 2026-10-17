@@ -21,7 +21,8 @@ export function drawNode(
   ctx: CanvasRenderingContext2D,
   globalScale: number,
   hasHighlights: boolean,
-  nodeScale = 1.0
+  nodeScale = 1.0,
+  theme: "dark" | "light" = "dark"
 ): void {
   const x = node.x ?? 0;
   const y = node.y ?? 0;
@@ -163,7 +164,7 @@ export function drawNode(
   }
 
   // Draw node label
-  drawNodeLabel(node, ctx, x, y + radius + 7, isGhost, isDimmed, globalScale);
+  drawNodeLabel(node, ctx, x, y + radius + 7, isGhost, isDimmed, globalScale, theme);
 
   ctx.restore();
 }
@@ -175,10 +176,12 @@ function drawNodeLabel(
   y: number,
   isGhost: boolean,
   isDimmed: boolean,
-  globalScale: number
+  globalScale: number,
+  theme: "dark" | "light" = "dark"
 ): void {
   const isHighlight = Boolean(node.highlight) || Boolean(node.isFocused);
   const isServiceOrIncident = node.kind === "Service" || node.kind === "Incident";
+  const isLight = theme === "light";
 
   // Base font size
   let fontSize = isHighlight ? 12 : isServiceOrIncident ? 11 : 10;
@@ -204,22 +207,48 @@ function drawNodeLabel(
   if (isServiceOrIncident && !isDimmed) {
     const padX = 5;
     const padY = 2;
-    ctx.fillStyle = isHighlight ? "rgba(15, 23, 42, 0.92)" : "rgba(15, 23, 42, 0.75)";
+    ctx.fillStyle = isLight
+      ? isHighlight
+        ? "rgba(255, 255, 255, 0.95)"
+        : "rgba(241, 245, 249, 0.9)"
+      : isHighlight
+      ? "rgba(15, 23, 42, 0.92)"
+      : "rgba(15, 23, 42, 0.75)";
     ctx.beginPath();
     ctx.roundRect(x - textWidth / 2 - padX, y - padY, textWidth + padX * 2, fontSize + padY * 2, 4);
     ctx.fill();
-    ctx.strokeStyle = isHighlight ? "#38bdf8" : "rgba(51, 65, 85, 0.6)";
+    ctx.strokeStyle = isLight
+      ? isHighlight
+        ? "#0284c7"
+        : "#cbd5e1"
+      : isHighlight
+      ? "#38bdf8"
+      : "rgba(51, 65, 85, 0.6)";
     ctx.lineWidth = 1;
     ctx.stroke();
   } else {
-    // High-contrast background halo for dark mode readability
+    // High-contrast background halo for dark / light readability
     ctx.lineWidth = 3.5;
-    ctx.strokeStyle = "#050811";
+    ctx.strokeStyle = isLight ? "#ffffff" : "#050811";
     ctx.strokeText(labelText, x, y);
   }
 
   // Fill text
-  ctx.fillStyle = isGhost ? "#94a3b8" : isHighlight ? "#38bdf8" : isServiceOrIncident ? "#f8fafc" : "#cbd5e1";
+  ctx.fillStyle = isGhost
+    ? isLight
+      ? "#64748b"
+      : "#94a3b8"
+    : isHighlight
+    ? isLight
+      ? "#0284c7"
+      : "#38bdf8"
+    : isServiceOrIncident
+    ? isLight
+      ? "#0f172a"
+      : "#f8fafc"
+    : isLight
+    ? "#334155"
+    : "#cbd5e1";
   ctx.fillText(labelText, x, y);
 
   // Strikethrough label for ghost evidence
@@ -240,7 +269,8 @@ export function drawLink(
   ctx: CanvasRenderingContext2D,
   globalScale: number,
   hasHighlights: boolean,
-  linkThickness = 1.0
+  linkThickness = 1.0,
+  theme: "dark" | "light" = "dark"
 ): void {
   const source = link.source as VisualNode;
   const target = link.target as VisualNode;
