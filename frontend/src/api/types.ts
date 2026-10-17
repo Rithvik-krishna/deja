@@ -605,14 +605,14 @@ export interface components {
             verdict: "robust" | "fragile" | "inconclusive";
             /**
              * Margin Before
-             * @description Score difference between #1 and #2 before perturbation (heuristic, not a probability)
+             * @description Score difference between #1 and #2 before perturbation (heuristic, not a probability). Null if fewer than two suspects exist.
              */
-            margin_before: number;
+            margin_before?: number | null;
             /**
              * Margin After
-             * @description Score difference between #1 and #2 after perturbation (heuristic, not a probability)
+             * @description Score difference between #1 and #2 after perturbation (heuristic, not a probability). Null if fewer than two suspects exist.
              */
-            margin_after: number;
+            margin_after?: number | null;
             /**
              * Top Suspect Before
              * @description Leading hypothesis before perturbation

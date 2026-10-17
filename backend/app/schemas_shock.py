@@ -67,8 +67,14 @@ class EvidenceShockResponse(BaseModel):
     verdict: Literal["robust", "fragile", "inconclusive"] = Field(
         description="Verdict: robust (top suspect holds), fragile (top suspect flips), or inconclusive (tie within epsilon 0.25)"
     )
-    margin_before: float = Field(description="Score difference between #1 and #2 before perturbation (heuristic, not a probability)")
-    margin_after: float = Field(description="Score difference between #1 and #2 after perturbation (heuristic, not a probability)")
+    margin_before: Optional[float] = Field(
+        default=None,
+        description="Score difference between #1 and #2 before perturbation (heuristic, not a probability). Null if fewer than two suspects exist.",
+    )
+    margin_after: Optional[float] = Field(
+        default=None,
+        description="Score difference between #1 and #2 after perturbation (heuristic, not a probability). Null if fewer than two suspects exist.",
+    )
     top_suspect_before: str = Field(description="Leading hypothesis before perturbation")
     top_suspect_after: str = Field(description="Leading hypothesis after perturbation")
     hypotheses: list[HypothesisItem] = Field(description="Ranked candidate hypotheses with before/after scores")

@@ -8,7 +8,12 @@ from .schemas_shock import (
     EvidenceShockResponse,
     HypothesisResponse,
 )
-from .shock import EvidenceProvider, build_shock_graph, evaluate_shock
+from .shock import (
+    EvidenceProvider,
+    build_shock_graph,
+    evaluate_shock,
+    score_hypotheses_baseline,
+)
 
 router = APIRouter(tags=["insights"])
 
@@ -53,12 +58,8 @@ def get_hypotheses(incident_id: str, engine: Engine = Depends(get_engine)):
     provider = EvidenceProvider(engine)
     service, symptom, hypotheses = provider.get_hypotheses(incident_id=incident_id)
 
-    # Calculate baseline scores and rank
-    for h in hypotheses:
-        h.score = round(sum(e.weight for e in h.evidence), 3)
-    hypotheses.sort(key=lambda h: (-h.score, h.service))
-    for rank, h in enumerate(hypotheses, 1):
-        h.rank = rank
+    # Calculate baseline scores and rank through pure scoring implementation
+    hypotheses = score_hypotheses_baseline(hypotheses)
 
     top_service = hypotheses[0].service if hypotheses else ""
     graph = build_shock_graph(hypotheses, top_service)

@@ -1575,14 +1575,28 @@
       "description": "Verdict: robust (top suspect holds), fragile (top suspect flips), or inconclusive (tie within epsilon 0.25)"
      },
      "margin_before": {
-      "type": "number",
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
       "title": "Margin Before",
-      "description": "Score difference between #1 and #2 before perturbation (heuristic, not a probability)"
+      "description": "Score difference between #1 and #2 before perturbation (heuristic, not a probability). Null if fewer than two suspects exist."
      },
      "margin_after": {
-      "type": "number",
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
       "title": "Margin After",
-      "description": "Score difference between #1 and #2 after perturbation (heuristic, not a probability)"
+      "description": "Score difference between #1 and #2 after perturbation (heuristic, not a probability). Null if fewer than two suspects exist."
      },
      "top_suspect_before": {
       "type": "string",
@@ -1634,8 +1648,6 @@
      "service",
      "symptom",
      "verdict",
-     "margin_before",
-     "margin_after",
      "top_suspect_before",
      "top_suspect_after",
      "hypotheses",

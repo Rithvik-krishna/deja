@@ -7,6 +7,9 @@ from datetime import date
 import pytest
 
 from app import config
+from app.clock import parse_dt
+from app.engine import NotFound
+from app.mock_engine import MockEngine
 from app.schemas import AlertRequest
 
 pytestmark = pytest.mark.skipif(not os.getenv("NEO4J_URI"), reason="NEO4J_URI not set")
@@ -21,6 +24,32 @@ def live():
     return e
 
 
+@pytest.fixture()
+def mock():
+    m = MockEngine()
+    m.reset()
+    return m
+
+
+def normalize_graph(payload_dict):
+    if not payload_dict:
+        return payload_dict
+    d = dict(payload_dict)
+    if "nodes" in d:
+        d["nodes"] = sorted(d["nodes"], key=lambda n: n["id"])
+    if "edges" in d:
+        d["edges"] = sorted(d["edges"], key=lambda e: e["id"])
+    return d
+
+
+def normalize_model_dump(m):
+    dump = m.model_dump()
+    if "graph" in dump and isinstance(dump["graph"], dict):
+        dump["graph"] = normalize_graph(dump["graph"])
+    return dump
+
+
+# ------------------------------------------------------------------ existing tests preserved
 def test_risk(live):
     r = live.risk(180, 10, date(2026, 10, 17))
     assert [(s.service, s.risk_score) for s in r.services[:5]] == [(x["service"], x["risk_score"]) for x in EXP["risk_top"]]
@@ -37,3 +66,188 @@ def test_alert(live):
     assert a.likely_origin == e["likely_origin"] and [s.service for s in a.suspects] == e["suspect_order"]
     assert a.recommendations[0].fix == e["top_recommendation"]
     assert [r.fix for r in a.recommendations if r.avoid] == e["avoid"]
+
+
+# ------------------------------------------------------------------ Test 1: Catalog
+def test_catalog_parity(live, mock):
+    assert live.catalog().model_dump() == mock.catalog().model_dump()
+
+
+# ------------------------------------------------------------------ Test 2: Risk full parity
+def test_risk_full_parity(live, mock):
+    assert normalize_model_dump(live.risk(180, 10, date(2026, 10, 17))) == normalize_model_dump(mock.risk(180, 10, date(2026, 10, 17)))
+    assert normalize_model_dump(live.risk()) == normalize_model_dump(mock.risk())
+
+
+# ------------------------------------------------------------------ Test 3: Blast
+def test_blast_parity(live, mock):
+    assert normalize_model_dump(live.blast("payments-api")) == normalize_model_dump(mock.blast("payments-api"))
+
+
+# ------------------------------------------------------------------ Test 4: Fix stats
+def test_fix_stats_parity(live, mock):
+    live_stats = [s.model_dump() for s in live.fix_stats("payments-api", "latency")]
+    mock_stats = [s.model_dump() for s in mock.fix_stats("payments-api", "latency")]
+    assert live_stats == mock_stats
+
+
+# ------------------------------------------------------------------ Test 5: Similar incidents (limit=50)
+def test_similar_incidents_parity_and_no_hidden_cap(live, mock):
+    live_sim = live.similar_incidents("checkout", "latency", limit=50, origin="payments-api")
+    mock_sim = mock.similar_incidents("checkout", "latency", limit=50, origin="payments-api")
+    assert len(live_sim) == len(mock_sim)
+    assert len(live_sim) >= 5, "Expected qualifying similar incidents"
+    assert [s.model_dump() for s in live_sim] == [s.model_dump() for s in mock_sim]
+
+
+# ------------------------------------------------------------------ Test 6: _suspects (historical & read-only)
+def test_suspects_parity_and_read_only(live, mock):
+    t = parse_dt("2026-10-17T07:00:00Z")
+
+    node_count_before = live._run("MATCH (n) RETURN count(n) AS cnt")[0]["cnt"]
+    rel_count_before = live._run("MATCH ()-[r]->() RETURN count(r) AS cnt")[0]["cnt"]
+
+    live_suspects = live._suspects("checkout", "latency", t=t)
+    mock_suspects = mock._suspects("checkout", "latency", t=t)
+
+    node_count_after = live._run("MATCH (n) RETURN count(n) AS cnt")[0]["cnt"]
+    rel_count_after = live._run("MATCH ()-[r]->() RETURN count(r) AS cnt")[0]["cnt"]
+
+    assert node_count_before == node_count_after, "_suspects must not modify nodes"
+    assert rel_count_before == rel_count_after, "_suspects must not modify relationships"
+
+    assert [s.model_dump() for s in live_suspects] == [s.model_dump() for s in mock_suspects]
+    assert any(s.service == "checkout" and s.hops == 0 for s in live_suspects), "Requested service must be 0-hop suspect"
+
+    # Historical timestamp before v2.3.1 deploy (2026-10-14)
+    t_hist = parse_dt("2026-10-10T00:00:00Z")
+    live_hist = live._suspects("checkout", "latency", t=t_hist)
+    mock_hist = mock._suspects("checkout", "latency", t=t_hist)
+    assert [s.model_dump() for s in live_hist] == [s.model_dump() for s in mock_hist]
+    for s in live_hist:
+        assert not any(d.version == "v2.3.1" for d in s.recent_deploys), "Future deploy must not appear in historical suspects"
+
+
+# ------------------------------------------------------------------ Test 7: create_alert full response parity
+def test_create_alert_full_parity(live, mock):
+    live_alert = live.create_alert(AlertRequest(service="checkout", symptom="latency"))
+    mock_alert = mock.create_alert(AlertRequest(service="checkout", symptom="latency"))
+
+    assert normalize_model_dump(live_alert) == normalize_model_dump(mock_alert)
+
+
+# ------------------------------------------------------------------ Additional error / boundary tests
+def test_unknown_service_errors(live, mock):
+    with pytest.raises(NotFound):
+        live.blast("unknown-service-xyz")
+    with pytest.raises(NotFound):
+        live.similar_incidents("unknown-service-xyz")
+    with pytest.raises(NotFound):
+        live._suspects("unknown-service-xyz", "latency", t=parse_dt("2026-10-17T07:00:00Z"))
+    with pytest.raises(NotFound):
+        live.create_alert(AlertRequest(service="unknown-service-xyz", symptom="latency"))
+
+
+# ------------------------------------------------------------------ Test 8: Owner & Reassign Parity (WriteMixin)
+def test_owner_and_reassign_parity(live, mock):
+    from app.schemas import ReassignRequest
+    from app.engine import BadRequest
+
+    # 1. Historical and current owner parity before reassign
+    live_owner_july = live.owner("payments-api", date(2026, 7, 15))
+    mock_owner_july = mock.owner("payments-api", date(2026, 7, 15))
+    assert live_owner_july.model_dump() == mock_owner_july.model_dump()
+
+    live_owner_cur = live.owner("payments-api")
+    mock_owner_cur = mock.owner("payments-api")
+    assert live_owner_cur.model_dump() == mock_owner_cur.model_dump()
+
+    # 2. Reassign parity
+    reassign_req = ReassignRequest(service="payments-api", engineer="Ravi")
+    live_reassign = live.reassign(reassign_req)
+    mock_reassign = mock.reassign(reassign_req)
+
+    assert live_reassign.model_dump() == mock_reassign.model_dump()
+    assert live_reassign.owner == "Ravi Iyer"
+    assert live_reassign.superseded is not None
+    assert live_reassign.superseded.engineer == "Asha Menon"
+
+    # 3. Post-reassign current owner parity
+    assert live.owner("payments-api").owner == "Ravi Iyer"
+    assert mock.owner("payments-api").owner == "Ravi Iyer"
+    assert live.owner("payments-api", date(2026, 7, 15)).owner == "Asha Menon"
+    assert mock.owner("payments-api", date(2026, 7, 15)).owner == "Asha Menon"
+
+    # 4. Error parity: reassigning to same engineer raises BadRequest
+    with pytest.raises(BadRequest):
+        live.reassign(reassign_req)
+    with pytest.raises(BadRequest):
+        mock.reassign(reassign_req)
+
+
+# ------------------------------------------------------------------ Test 9: List Incidents, Detail, and Timeline Parity
+def test_incidents_detail_and_timeline_parity(live, mock):
+    # 1. list_incidents parity
+    live_list = [i.model_dump() for i in live.list_incidents(limit=20)]
+    mock_list = [i.model_dump() for i in mock.list_incidents(limit=20)]
+    assert live_list == mock_list
+
+    # 2. incident detail parity on seeded incident INC-001
+    live_inc = live.incident("INC-001")
+    mock_inc = mock.incident("INC-001")
+    assert normalize_model_dump(live_inc) == normalize_model_dump(mock_inc)
+
+    # 3. timeline parity
+    live_timeline = [t.model_dump() for t in live.timeline("INC-001")]
+    mock_timeline = [t.model_dump() for t in mock.timeline("INC-001")]
+    assert live_timeline == mock_timeline
+
+
+# ------------------------------------------------------------------ Test 10: Record Outcome Parity (WriteMixin)
+def test_record_outcome_parity(live, mock):
+    from app.schemas import OutcomeRequest
+
+    # Create alerts on both to have fresh matching incidents
+    live_alert = live.create_alert(AlertRequest(service="checkout", symptom="latency"))
+    mock_alert = mock.create_alert(AlertRequest(service="checkout", symptom="latency"))
+    live_iid = live_alert.incident.id
+    mock_iid = mock_alert.incident.id
+
+    # 1. Record FAILED attempt
+    live_out_failed = live.record_outcome(OutcomeRequest(
+        incident_id=live_iid,
+        fix="restart-pods",
+        status="FAILED",
+        notes="still failing after pod restart",
+    ))
+    mock_out_failed = mock.record_outcome(OutcomeRequest(
+        incident_id=mock_iid,
+        fix="restart-pods",
+        status="FAILED",
+        notes="still failing after pod restart",
+    ))
+
+    assert live_out_failed.attempt.fix == "restart-pods"
+    assert live_out_failed.attempt.status == "FAILED"
+    assert live_out_failed.incident.status == "open"
+    assert [r.model_dump() for r in live_out_failed.recommendations] == [r.model_dump() for r in mock_out_failed.recommendations]
+    assert [s.model_dump() for s in live_out_failed.fix_stats] == [s.model_dump() for s in mock_out_failed.fix_stats]
+
+    # 2. Record SUCCESS attempt (resolving incident)
+    live_out_succ = live.record_outcome(OutcomeRequest(
+        incident_id=live_iid,
+        fix="rollback-deploy",
+        status="SUCCESS",
+        notes="latency recovered after rollback",
+    ))
+    mock_out_succ = mock.record_outcome(OutcomeRequest(
+        incident_id=mock_iid,
+        fix="rollback-deploy",
+        status="SUCCESS",
+        notes="latency recovered after rollback",
+    ))
+
+    assert live_out_succ.attempt.status == "SUCCESS"
+    assert live_out_succ.incident.status == "resolved"
+    assert live.incident(live_iid).status == "resolved"
+    assert mock.incident(mock_iid).status == "resolved"
