@@ -48,6 +48,19 @@ class MockEngine(Engine):
         self._load()
 
     # ------------------------------------------------------------------ state
+    def _ensure_demo_incident(self):
+        if "INC-045" in self.incidents:
+            return self.incidents["INC-045"]
+        t = now()
+        suspects = self._suspects("checkout", "latency", t)
+        top = suspects[0]
+        inc = dict(id="INC-045", title="checkout latency spiking", severity="SEV2",
+                   symptom="latency", status="open", started_at=iso(t), resolved_at=None, summary="",
+                   origin=top.service, impacted=["checkout"] if top.service != "checkout" else [],
+                   followed_deploy=top.recent_deploys[0].id if top.recent_deploys else None, attempts=[])
+        self.incidents["INC-045"] = inc
+        return inc
+
     def _load(self):
         seed = json.loads(open(self.seed_path).read())
         self.seed_counts = {**seed["meta"]["counts"]}
@@ -146,6 +159,8 @@ class MockEngine(Engine):
 
     def _need_incident(self, iid):
         if iid not in self.incidents:
+            if iid == "INC-045":
+                return self._ensure_demo_incident()
             raise NotFound(f"unknown incident '{iid}'")
         return self.incidents[iid]
 
