@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { api, type Catalog, type ReassignResponse } from "../api/client";
 import { errorMessage } from "../lib/errors";
 import type { AsyncState } from "../state/useAsync";
@@ -13,9 +13,14 @@ export interface OwnersPanelProps {
   /** Bump when ownership changed elsewhere (e.g. a chat reassignment) so the lookup is re-run. */
   refreshToken: number;
   onNotify: (kind: ToastKind, text: string) => void;
+  /**
+   * Show this service, e.g. the one a chat reply just reassigned (taken from the backend's tool call).
+   * `seq` changes on every request so asking for the same service again still applies.
+   */
+  focusService?: { service: string; seq: number } | null;
 }
 
-export function OwnersPanel({ catalog, refreshToken, onNotify }: OwnersPanelProps) {
+export function OwnersPanel({ catalog, refreshToken, onNotify, focusService }: OwnersPanelProps) {
   const uid = useId();
   const services = catalog.data?.services ?? [];
   const engineers = catalog.data?.engineers ?? [];
@@ -23,6 +28,10 @@ export function OwnersPanel({ catalog, refreshToken, onNotify }: OwnersPanelProp
   const [chosenService, setChosenService] = useState("");
   const [date, setDate] = useState(""); // "" = not chosen: the backend uses today
   const [localTick, setLocalTick] = useState(0);
+
+  useEffect(() => {
+    if (focusService) setChosenService(focusService.service);
+  }, [focusService]);
 
   // Default to the first catalog service, but only once the catalog has actually provided one.
   const service = services.some((s) => s.name === chosenService) ? chosenService : (services[0]?.name ?? "");

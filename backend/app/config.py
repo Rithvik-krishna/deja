@@ -8,7 +8,14 @@ try:
 except Exception:  # dotenv optional
     pass
 
-SEED_PATH = Path(os.getenv("DEJA_SEED_PATH", ROOT / "data" / "seed.json"))
+_default_seed = ROOT / "data" / "seed.json"
+if not _default_seed.exists():
+    _backend_dir = Path(__file__).resolve().parents[1]
+    _fallback_seed = _backend_dir / "seed.json"
+    if _fallback_seed.exists():
+        _default_seed = _fallback_seed
+
+SEED_PATH = Path(os.getenv("DEJA_SEED_PATH", _default_seed))
 MODE = os.getenv("MODE", "mock").lower()  # "mock" (in-memory reference engine) | "live" (Neo4j)
 
 NEO4J_URI = os.getenv("NEO4J_URI", "")
