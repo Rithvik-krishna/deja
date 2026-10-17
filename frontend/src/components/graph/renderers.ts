@@ -159,7 +159,7 @@ export function drawNode(
   }
 
   // Draw node label
-  drawNodeLabel(node, ctx, x, y + radius + 8, isGhost, isDimmed);
+  drawNodeLabel(node, ctx, x, y + radius + 7, isGhost, isDimmed, globalScale);
 
   ctx.restore();
 }
@@ -170,32 +170,56 @@ function drawNodeLabel(
   x: number,
   y: number,
   isGhost: boolean,
-  isDimmed: boolean
+  isDimmed: boolean,
+  globalScale: number
 ): void {
-  const isHighlight = Boolean(node.highlight);
-  const fontSize = isHighlight ? 12 : 10;
-  ctx.font = `${isHighlight ? "bold" : "normal"} ${fontSize}px sans-serif`;
+  const isHighlight = Boolean(node.highlight) || Boolean(node.isFocused);
+  const isServiceOrIncident = node.kind === "Service" || node.kind === "Incident";
+
+  // Base font size
+  let fontSize = isHighlight ? 12 : isServiceOrIncident ? 11 : 10;
+  if (globalScale < 0.75 && !isHighlight && !isServiceOrIncident) {
+    fontSize = 9;
+  }
+
+  ctx.font = `${isHighlight ? "bold" : isServiceOrIncident ? "600" : "normal"} ${fontSize}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // Truncate long label names
+  // Adaptive label truncation to prevent overlapping at modest zoom levels
   let labelText = node.name || node.id;
-  if (!isHighlight && labelText.length > 18) {
-    labelText = labelText.slice(0, 16) + "…";
+  const maxLen = isHighlight ? 28 : isServiceOrIncident ? 22 : globalScale < 0.8 ? 14 : 18;
+  if (labelText.length > maxLen) {
+    labelText = labelText.slice(0, maxLen - 1) + "…";
   }
 
-  // High-contrast background halo for dark mode readability
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "#050811";
-  ctx.strokeText(labelText, x, y);
+  const textMetrics = ctx.measureText(labelText);
+  const textWidth = textMetrics.width;
+
+  // For Service and Incident nodes, render a subtle translucent background badge
+  if (isServiceOrIncident && !isDimmed) {
+    const padX = 5;
+    const padY = 2;
+    ctx.fillStyle = isHighlight ? "rgba(15, 23, 42, 0.92)" : "rgba(15, 23, 42, 0.75)";
+    ctx.beginPath();
+    ctx.roundRect(x - textWidth / 2 - padX, y - padY, textWidth + padX * 2, fontSize + padY * 2, 4);
+    ctx.fill();
+    ctx.strokeStyle = isHighlight ? "#38bdf8" : "rgba(51, 65, 85, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  } else {
+    // High-contrast background halo for dark mode readability
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = "#050811";
+    ctx.strokeText(labelText, x, y);
+  }
 
   // Fill text
-  ctx.fillStyle = isGhost ? "#94a3b8" : isHighlight ? "#ffffff" : "#cbd5e1";
+  ctx.fillStyle = isGhost ? "#94a3b8" : isHighlight ? "#38bdf8" : isServiceOrIncident ? "#f8fafc" : "#cbd5e1";
   ctx.fillText(labelText, x, y);
 
   // Strikethrough label for ghost evidence
   if (isGhost) {
-    const textWidth = ctx.measureText(labelText).width;
     const strikeY = y + fontSize / 2;
     ctx.beginPath();
     ctx.moveTo(x - textWidth / 2 - 2, strikeY);

@@ -101,8 +101,11 @@ class Neo4jEngine(WriteMixin, Engine):
         self.driver = GraphDatabase.driver(
             config.NEO4J_URI,
             auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD),
+            max_connection_lifetime=30 * 60,
+            liveness_check_timeout=1,
         )
         self.db = config.NEO4J_DATABASE
+        self._service_cache: dict[str, dict[str, Any]] = {}
 
     def _run(self, cypher: str, **params: Any) -> list[dict[str, Any]]:
         with self.driver.session(database=self.db) as s:
@@ -121,17 +124,23 @@ class Neo4jEngine(WriteMixin, Engine):
             return Health(status="degraded", mode="live", neo4j=False)
 
     def reset(self) -> DemoResetResponse:
+        self._service_cache.clear()
         from scripts.load_seed import load
-        return DemoResetResponse(ok=True, counts=load(self.driver, wipe=True, database=self.db))
+        counts = load(self.driver, wipe=True, database=self.db)
+        self._service_cache.clear()
+        return DemoResetResponse(ok=True, counts=counts)
 
     # ------------------------------------------------------------------ helpers
     def _need_service(self, name: str) -> dict[str, Any]:
+        if name in self._service_cache:
+            return self._service_cache[name]
         rows = self._run(
             "MATCH (s:Service {name: $name}) RETURN s.name AS name, s.tier AS tier, s.team AS team, s.description AS description",
             name=name,
         )
         if not rows:
             raise NotFound(f"unknown service '{name}'")
+        self._service_cache[name] = rows[0]
         return rows[0]
 
     def _svc_node(self, g: G, name: str, highlight: bool = False, score: Optional[float] = None):

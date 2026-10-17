@@ -52,7 +52,11 @@ export default function GraphView({
 
     const ro = new ResizeObserver(updateSize);
     ro.observe(containerRef.current);
-    return () => ro.disconnect();
+    window.addEventListener("resize", updateSize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateSize);
+    };
   }, []);
 
   // Track mouse coordinates for tooltip positioning
@@ -306,8 +310,9 @@ export default function GraphView({
           onEngineTick={handleEngineTick}
           onNodeDragEnd={handleNodeDragEnd}
           cooldownTicks={120}
-          d3AlphaDecay={0.025}
-          d3VelocityDecay={0.35}
+          warmupTicks={30}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
           enableNodeDrag={true}
           enableZoomInteraction={true}
           enablePanInteraction={true}

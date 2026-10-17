@@ -20,6 +20,13 @@ export type FixStat = S["FixStat"];
 export type ChatResponse = S["ChatResponse"];
 export type Catalog = S["Catalog"];
 export type Symptom = S["AlertRequest"]["symptom"];
+export type EvidenceShockRequest = S["EvidenceShockRequest"];
+export type EvidenceShockResponse = S["EvidenceShockResponse"];
+export type HypothesisResponse = S["HypothesisResponse"];
+export type HypothesisItem = S["HypothesisItem"];
+export type EvidenceItem = S["EvidenceItem"];
+export type CriticalEvidenceItem = S["CriticalEvidenceItem"];
+export type CriticalSourceItem = S["CriticalSourceItem"];
 
 const BASE: string = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000";
 
@@ -59,4 +66,25 @@ export const api = {
   chat: (session_id: string, message: string) => post<ChatResponse>("/chat", { session_id, message }),
   wipeSession: (session_id: string) => post<S["WipeResponse"]>("/sessions/wipe", { session_id }),
   resetDemo: () => post<S["DemoResetResponse"]>("/demo/reset", {}),
+  hypotheses: (incidentId: string) =>
+    call<HypothesisResponse>(`/insights/hypotheses/${encodeURIComponent(incidentId)}`),
+  evidenceShock: (
+    reqOrIncidentId: string | EvidenceShockRequest,
+    removeSources?: string[],
+    removeEvidenceIds?: string[],
+    service?: string,
+    symptom?: Symptom
+  ) => {
+    const body: EvidenceShockRequest =
+      typeof reqOrIncidentId === "string"
+        ? {
+            incident_id: reqOrIncidentId,
+            remove_sources: removeSources,
+            remove_evidence_ids: removeEvidenceIds,
+            service,
+            symptom,
+          }
+        : reqOrIncidentId;
+    return post<EvidenceShockResponse>("/insights/evidence-shock", body);
+  },
 };
