@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type KeyboardEvent, type MutableRefObject } from "react";
 import { api, type ChatResponse } from "../api/client";
 import { errorMessage } from "../lib/errors";
 import { newMessageId, type AssistantMessage, type ChatAction, type ChatMessage, type UserMessage } from "../state/chat";
 
 /** Demo prompts. They go through exactly the same send path as typed text; the replies come from the backend. */
 const QUICK_ACTIONS = ["Checkout latency is spiking", "The restart failed", "It's back"];
+
+/** Lets the scripted demo send a message through exactly the same path as typing it. */
+export interface ChatSender {
+  /** Resolves with the backend's reply; rejects if the request failed or the reply was dropped (e.g. session wiped). */
+  send: (text: string) => Promise<ChatResponse>;
+}
+
+type SendOutcome = { ok: true; res: ChatResponse } | { ok: false; error: string };
 
 export interface ChatProps {
   sessionId: string;
@@ -15,9 +23,13 @@ export interface ChatProps {
   onOpenIncident: (incidentId: string) => void;
   /** Called when a request fails, so the app can re-check backend health instead of showing a stale "connected" badge. */
   onRequestFailed?: () => void;
+  /** Filled with a sender for the scripted demo. */
+  senderRef?: MutableRefObject<ChatSender | null>;
+  /** While the scripted demo runs, manual input is disabled so it cannot interleave with the script. */
+  locked?: boolean;
 }
 
-export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenIncident, onRequestFailed }: ChatProps) {
+export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenIncident, onRequestFailed, senderRef, locked = false }: ChatProps) {
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const inflight = useRef(false);
@@ -33,25 +45,30 @@ export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenInci
   }, [sessionId]);
 
   const send = useCallback(
-    async (raw: string, retryId?: string) => {
+    async (raw: string, retryId?: string): Promise<SendOutcome> => {
       const text = raw.trim();
-      if (!text || inflight.current) return;
+      if (!text) return { ok: false, error: "The message is empty." };
+      if (inflight.current) return { ok: false, error: "Another message is still being sent." };
       inflight.current = true;
       setPending(true);
 
       const sid = sessionRef.current;
+      const dropped: SendOutcome = { ok: false, error: "The chat session changed before the reply arrived." };
       const id = retryId ?? newMessageId();
       dispatch(retryId ? { type: "user_retry", id } : { type: "user_sent", id, text });
       try {
         const res = await api.chat(sid, text);
-        if (sessionRef.current !== sid) return;
+        if (sessionRef.current !== sid) return dropped;
         dispatch({ type: "user_delivered", id });
         dispatch({ type: "assistant_received", id: newMessageId(), response: res });
         onChatResponse(res);
+        return { ok: true, res };
       } catch (e) {
-        if (sessionRef.current !== sid) return;
-        dispatch({ type: "user_failed", id, error: errorMessage(e) });
+        if (sessionRef.current !== sid) return dropped;
+        const error = errorMessage(e);
+        dispatch({ type: "user_failed", id, error });
         onRequestFailed?.();
+        return { ok: false, error };
       } finally {
         if (sessionRef.current === sid) {
           inflight.current = false;
@@ -62,9 +79,24 @@ export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenInci
     [dispatch, onChatResponse, onRequestFailed],
   );
 
+  useEffect(() => {
+    if (!senderRef) return;
+    const sender: ChatSender = {
+      send: async (text) => {
+        const outcome = await send(text);
+        if (!outcome.ok) throw new Error(outcome.error);
+        return outcome.res;
+      },
+    };
+    senderRef.current = sender;
+    return () => {
+      if (senderRef.current === sender) senderRef.current = null;
+    };
+  }, [senderRef, send]);
+
   function submit() {
     const text = draft;
-    if (!text.trim() || inflight.current) return;
+    if (!text.trim() || inflight.current || locked) return;
     setDraft("");
     void send(text);
   }
@@ -102,7 +134,7 @@ export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenInci
         )}
         {messages.map((m) =>
           m.role === "user" ? (
-            <UserBubble key={m.id} message={m} retryDisabled={pending} onRetry={() => void send(m.text, m.id)} />
+            <UserBubble key={m.id} message={m} retryDisabled={pending || locked} onRetry={() => void send(m.text, m.id)} />
           ) : (
             <AssistantBubble key={m.id} message={m} onOpenIncident={onOpenIncident} />
           ),
@@ -121,7 +153,7 @@ export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenInci
 
       <div className="quick-actions" role="group" aria-label="Demo prompts">
         {QUICK_ACTIONS.map((q) => (
-          <button key={q} type="button" className="chip-btn" disabled={pending} onClick={() => void send(q)}>
+          <button key={q} type="button" className="chip-btn" disabled={pending || locked} onClick={() => void send(q)}>
             {q}
           </button>
         ))}
@@ -141,11 +173,12 @@ export function Chat({ sessionId, messages, dispatch, onChatResponse, onOpenInci
           id="chat-input"
           value={draft}
           rows={2}
-          placeholder="Describe an alert or ask about an incident…"
+          placeholder={locked ? "The scripted demo is running…" : "Describe an alert or ask about an incident…"}
+          disabled={locked}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="btn btn-primary" disabled={pending || !draft.trim()}>
+        <button type="submit" className="btn btn-primary" disabled={pending || locked || !draft.trim()}>
           {pending ? "Sending…" : "Send"}
         </button>
       </form>

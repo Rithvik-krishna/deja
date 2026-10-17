@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type MutableRefObject } from "react";
 import { api, type EvidenceShockRequest, type EvidenceShockResponse, type GraphPayload } from "../api/client";
 import { errorMessage, parseApiError } from "../lib/errors";
 import { useAsync } from "../state/useAsync";
@@ -13,6 +13,16 @@ import { comparisonGaps, hasGraph, removedEvidenceIds, sourceLabel, type ShockRu
 const SCORING_NOTE =
   "Heuristic score, not a probability. Synthetic data. Scoring rule: 3*recent deploy + 1 per matching past incident + 1/(hops+1).";
 
+/** Lets the scripted demo drive the panel's own Auto-shock and Reset shocks (same code paths as the buttons). */
+export interface StressController {
+  incidentId: string;
+  status: () => { kind: "loading" } | { kind: "ready" } | { kind: "busy" } | { kind: "error"; message: string };
+  /** Resolves with the backend's shock result; rejects with the error the panel shows. */
+  autoShock: () => Promise<EvidenceShockResponse>;
+  /** Resolves with the number of baseline hypotheses once they have actually been re-fetched. */
+  resetShocks: () => Promise<number>;
+}
+
 export interface StressTestPanelProps {
   incidentId: string | null;
   /** Whether the Stress Test tab is showing. Hypotheses are fetched lazily, on first view of each incident. */
@@ -23,6 +33,8 @@ export interface StressTestPanelProps {
   /** Replace the centre graph. Called only with a payload that actually contains nodes or edges. */
   onGraphChange: (graph: GraphPayload) => void;
   onNotify: (kind: ToastKind, text: string) => void;
+  /** Filled with a controller for the incident currently shown (null when there is none). */
+  controllerRef?: MutableRefObject<StressController | null>;
 }
 
 export function StressTestPanel(props: StressTestPanelProps) {
@@ -68,7 +80,9 @@ interface BodyProps extends StressTestPanelProps {
   nextSeq: () => number;
 }
 
-function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChange, onNotify, runs, onRun, nextSeq }: BodyProps) {
+type Outcome<T> = { ok: true; value: T } | { ok: false; error: string };
+
+function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChange, onNotify, runs, onRun, nextSeq, controllerRef }: BodyProps) {
   const uid = useId();
   // Latch: once this incident's tab has been viewed, keep the data loaded even if the user switches tabs.
   const [wanted, setWanted] = useState(active);
@@ -83,22 +97,32 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
   const inflight = useRef(false);
   const alive = useRef(true);
   const pushBaselineGraph = useRef(false);
+  const resetWaiter = useRef<{ resolve: (n: number) => void; reject: (e: Error) => void } | null>(null);
   const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     alive.current = true;
     return () => {
       alive.current = false;
+      resetWaiter.current?.reject(new Error("The stress panel closed before the baseline reloaded."));
+      resetWaiter.current = null;
     };
   }, []);
 
   // After "Reset shocks" reloads the baseline, show the baseline graph (explicit user action only).
   useEffect(() => {
-    if (pushBaselineGraph.current && hyp.data && !hyp.loading) {
+    if (!pushBaselineGraph.current || hyp.loading) return;
+    if (hyp.data) {
       pushBaselineGraph.current = false;
       if (hasGraph(hyp.data.graph)) onGraphChange(hyp.data.graph);
+      resetWaiter.current?.resolve(hyp.data.hypotheses.length);
+      resetWaiter.current = null;
+    } else if (hyp.error) {
+      pushBaselineGraph.current = false;
+      resetWaiter.current?.reject(new Error(`Couldn't reload the baseline: ${hyp.error}`));
+      resetWaiter.current = null;
     }
-  }, [hyp.data, hyp.loading, onGraphChange]);
+  }, [hyp.data, hyp.loading, hyp.error, hyp.settled, onGraphChange]);
 
   const result = shock && shock.incident_id === incidentId ? shock : null;
 
@@ -124,20 +148,24 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
   }
 
   /** Runs one user action at a time; selection is never touched on failure so the user can simply retry. */
-  async function guarded(mode: Mode, work: () => Promise<void>) {
-    if (inflight.current) return;
+  async function guarded<T>(mode: Mode, work: () => Promise<T>): Promise<Outcome<T>> {
+    if (inflight.current) return { ok: false, error: "A stress test is already running." };
     inflight.current = true;
     setRunning(mode);
     setRunError(null);
     try {
-      await work();
+      return { ok: true, value: await work() };
     } catch (e) {
-      if (alive.current) setRunError(describeError(e));
+      const described = describeError(e);
+      if (alive.current) setRunError(described);
+      return { ok: false, error: described.text };
     } finally {
       inflight.current = false;
       if (alive.current) setRunning(null);
     }
   }
+
+  const switchedAway = () => new Error("The incident changed before the stress test finished.");
 
   function runManual() {
     const ids = [...selectedIds];
@@ -148,7 +176,9 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
     if (sources.length) req.remove_sources = sources;
     void guarded("manual", async () => {
       const res = await api.evidenceShock(req);
-      if (alive.current) record(res, ids, sources, "manual");
+      if (!alive.current) throw switchedAway();
+      record(res, ids, sources, "manual");
+      return res;
     });
   }
 
@@ -156,16 +186,18 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
    * The contract has no server-side auto-select: the caller names what to remove. So Auto-shock asks the backend
    * for its own critical-evidence ranking (a request with nothing removed) and removes the source it ranks first.
    */
-  function runAuto() {
-    void guarded("auto", async () => {
+  function runAuto(): Promise<Outcome<EvidenceShockResponse>> {
+    return guarded("auto", async () => {
       const probe = await api.evidenceShock({ incident_id: incidentId });
-      if (!alive.current) return;
+      if (!alive.current) throw switchedAway();
       const top = probe.critical_sources?.[0]?.source;
       if (!top) throw new Error("The backend returned no critical sources, so there is nothing to auto-select.");
       setSelectedIds(new Set());
       setSelectedSources(new Set([top]));
       const res = await api.evidenceShock({ incident_id: incidentId, remove_sources: [top] });
-      if (alive.current) record(res, [], [top], "auto");
+      if (!alive.current) throw switchedAway();
+      record(res, [], [top], "auto");
+      return res;
     });
   }
 
@@ -177,14 +209,45 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
     onNotify("info", adding ? `${sourceLabel(src)} selected for removal. Press Run shock to test it.` : `${sourceLabel(src)} deselected.`);
   }
 
-  function reset() {
+  function reset(): Promise<number> {
     setSelectedIds(new Set());
     setSelectedSources(new Set());
     setRunError(null);
     onShockResult(incidentId, null);
     pushBaselineGraph.current = true;
+    resetWaiter.current?.reject(new Error("Superseded by a newer reset."));
+    const done = new Promise<number>((resolve, reject) => {
+      resetWaiter.current = { resolve, reject };
+    });
     hyp.reload();
+    return done;
   }
+
+  // The controller always calls the latest render's functions and state.
+  const latest = useRef({ hyp, running, runAuto, reset });
+  latest.current = { hyp, running, runAuto, reset };
+  useEffect(() => {
+    if (!controllerRef) return;
+    const controller: StressController = {
+      incidentId,
+      status: () => {
+        const { hyp: h, running: r } = latest.current;
+        if (h.error) return { kind: "error", message: h.error };
+        if (!h.data || h.loading) return { kind: "loading" };
+        return r !== null ? { kind: "busy" } : { kind: "ready" };
+      },
+      autoShock: async () => {
+        const outcome = await latest.current.runAuto();
+        if (!outcome.ok) throw new Error(outcome.error);
+        return outcome.value;
+      },
+      resetShocks: () => latest.current.reset(),
+    };
+    controllerRef.current = controller;
+    return () => {
+      if (controllerRef.current === controller) controllerRef.current = null;
+    };
+  }, [controllerRef, incidentId]);
 
   const busy = running !== null;
   const gaps = result ? comparisonGaps(result) : [];
@@ -254,10 +317,10 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
               <button type="button" className="btn btn-primary" disabled={busy || selectionCount === 0} onClick={runManual}>
                 {running === "manual" ? "Running…" : "Run shock"}
               </button>
-              <button type="button" className="btn" disabled={busy} onClick={runAuto}>
+              <button type="button" className="btn" disabled={busy} onClick={() => void runAuto()}>
                 {running === "auto" ? "Auto-shocking…" : "Auto-shock"}
               </button>
-              <button type="button" className="btn" disabled={busy} onClick={reset}>
+              <button type="button" className="btn" disabled={busy} onClick={() => void reset().catch(() => undefined)}>
                 Reset shocks
               </button>
             </div>

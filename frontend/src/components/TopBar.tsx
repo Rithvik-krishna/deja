@@ -12,6 +12,9 @@ interface TopBarProps {
   onWipeSession: () => void;
   /** Resolves when the reset attempt is finished (the caller reports success / failure itself). */
   onResetDemo: () => Promise<void>;
+  /** True while the scripted demo is running: the manual controls that would interfere are disabled. */
+  demoActive: boolean;
+  onRunDemo: () => void;
 }
 
 /** Backend badge text comes from GET /health (`mode`, `neo4j`) — never inferred from a request merely succeeding. */
@@ -45,8 +48,10 @@ function BackendBadge({ health, onRecheck }: Pick<TopBarProps, "health"> & { onR
   );
 }
 
-export function TopBar({ health, onRecheckHealth, sessionId, busy, onWipeSession, onResetDemo }: TopBarProps) {
+export function TopBar({ health, onRecheckHealth, sessionId, busy, onWipeSession, onResetDemo, demoActive, onRunDemo }: TopBarProps) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDemo, setConfirmDemo] = useState(false);
+  const locked = busy !== null || demoActive;
 
   async function confirmed() {
     await onResetDemo();
@@ -68,12 +73,34 @@ export function TopBar({ health, onRecheckHealth, sessionId, busy, onWipeSession
         Session <code>{sessionId.slice(0, 8)}</code>
       </span>
 
-      <button type="button" className="btn" onClick={onWipeSession} disabled={busy !== null}>
+      <button type="button" className="btn btn-primary" onClick={() => setConfirmDemo(true)} disabled={locked}>
+        {demoActive ? "Demo running…" : "Run demo"}
+      </button>
+      <button type="button" className="btn" onClick={onWipeSession} disabled={locked}>
         {busy === "wipe" ? "Wiping…" : "Wipe session"}
       </button>
-      <button type="button" className="btn btn-danger-outline" onClick={() => setConfirmReset(true)} disabled={busy !== null}>
+      <button type="button" className="btn btn-danger-outline" onClick={() => setConfirmReset(true)} disabled={locked}>
         Reset demo
       </button>
+
+      {confirmDemo && (
+        <ConfirmDialog
+          title="Run the scripted demo?"
+          confirmLabel="Reset data and run demo"
+          confirmTone="primary"
+          onConfirm={() => {
+            setConfirmDemo(false);
+            onRunDemo();
+          }}
+          onCancel={() => setConfirmDemo(false)}
+        >
+          <p>
+            The demo first <strong>resets the demo data to the seed</strong>, so anything recorded since then is lost. It then runs
+            the documented story step by step against the backend, pausing between steps.
+          </p>
+          <p>It changes backend data (it opens an incident, logs a failed fix and reassigns an owner). You can stop it at any time.</p>
+        </ConfirmDialog>
+      )}
 
       {confirmReset && (
         <ConfirmDialog

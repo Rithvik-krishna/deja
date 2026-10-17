@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { api, type EvidenceShockResponse } from "../api/client";
 import { deferred, evidenceGraph, hypBaseline, shockInconclusive, shockProbe, shockRobustNoGraph } from "../test/fixtures";
-import { StressTestPanel } from "./StressTestPanel";
+import { StressTestPanel, type StressController } from "./StressTestPanel";
 
 vi.mock("../api/client", () => ({ api: { hypotheses: vi.fn(), evidenceShock: vi.fn() } }));
 const m = vi.mocked(api);
@@ -12,7 +12,7 @@ const NOTE =
   "Heuristic score, not a probability. Synthetic data. Scoring rule: 3*recent deploy + 1 per matching past incident + 1/(hops+1).";
 
 /** Stateful host mirroring how App owns the latest shock result (tagged with its incident). */
-function Host({ incidentId = "INC-045", active = true, onGraphChange = vi.fn(), onNotify = vi.fn(), onShockResult = vi.fn() }) {
+function Host({ incidentId = "INC-045", active = true, onGraphChange = vi.fn(), onNotify = vi.fn(), onShockResult = vi.fn(), controllerRef = undefined as { current: StressController | null } | undefined }) {
   const [shock, setShock] = useState<{ incidentId: string; result: EvidenceShockResponse } | null>(null);
   return (
     <StressTestPanel
@@ -25,6 +25,7 @@ function Host({ incidentId = "INC-045", active = true, onGraphChange = vi.fn(), 
       }}
       onGraphChange={onGraphChange}
       onNotify={onNotify}
+      controllerRef={controllerRef}
     />
   );
 }
@@ -512,5 +513,95 @@ describe("history and J: incident isolation", () => {
     expect(onShockResult).not.toHaveBeenCalled();
     expect(onGraphChange).not.toHaveBeenCalled();
     expect(screen.queryByText("Run 1")).not.toBeInTheDocument();
+  });
+});
+
+describe("controller used by the scripted demo", () => {
+  it("reports loading, then ready, for the incident shown", async () => {
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(ref.current?.incidentId).toBe("INC-045");
+    expect(ref.current?.status()).toEqual({ kind: "ready" });
+  });
+
+  it("reports a load error instead of staying 'loading' forever", async () => {
+    m.hypotheses.mockRejectedValue(new Error("501 /insights/hypotheses/INC-045: Not implemented"));
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByText(/isn't available on this backend/);
+    expect(ref.current?.status()).toEqual({ kind: "error", message: "501 /insights/hypotheses/INC-045: Not implemented" });
+  });
+
+  it("autoShock runs the same flow as the button and resolves with the backend's result", async () => {
+    m.evidenceShock.mockResolvedValueOnce(shockProbe).mockResolvedValueOnce(shockInconclusive);
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+
+    const result = await ref.current!.autoShock();
+
+    expect(result).toBe(shockInconclusive);
+    expect(await screen.findByRole("region", { name: "Result (after removal)" })).toBeInTheDocument();
+    expect(box("Remove entire source: Historical incidents")).toBeChecked();
+    expect(screen.getByText("Run 1")).toBeInTheDocument();
+  });
+
+  it("autoShock rejects with the error the panel shows, and the panel stays usable", async () => {
+    m.evidenceShock.mockRejectedValueOnce(new Error("500 /insights/evidence-shock: nope"));
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+
+    await expect(ref.current!.autoShock()).rejects.toThrow("500 /insights/evidence-shock: nope");
+    expect(await screen.findByRole("alert")).toHaveTextContent("500 /insights/evidence-shock: nope");
+    expect(screen.getByRole("button", { name: "Auto-shock" })).toBeEnabled();
+  });
+
+  it("autoShock refuses to start while another stress test is running", async () => {
+    const pending = deferred<EvidenceShockResponse>();
+    m.evidenceShock.mockReturnValue(pending.promise);
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+
+    const first = ref.current!.autoShock();
+    await waitFor(() => expect(ref.current?.status()).toEqual({ kind: "busy" }));
+    await expect(ref.current!.autoShock()).rejects.toThrow("already running");
+    expect(m.evidenceShock).toHaveBeenCalledTimes(1);
+
+    pending.resolve({ ...shockProbe, critical_sources: [] });
+    await expect(first).rejects.toThrow("no critical sources");
+  });
+
+  it("resetShocks resolves only after the baseline is re-fetched, even when the reload is instant and returns an identical object", async () => {
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(m.hypotheses).toHaveBeenCalledTimes(1);
+
+    const n = await ref.current!.resetShocks();
+
+    expect(n).toBe(hypBaseline.hypotheses.length);
+    expect(m.hypotheses).toHaveBeenCalledTimes(2);
+  });
+
+  it("resetShocks rejects if the baseline cannot be reloaded", async () => {
+    const ref: { current: StressController | null } = { current: null };
+    render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    m.hypotheses.mockRejectedValueOnce(new Error("500 /insights/hypotheses/INC-045: down"));
+
+    await expect(ref.current!.resetShocks()).rejects.toThrow("Couldn't reload the baseline: 500");
+  });
+
+  it("clears the controller when the panel no longer shows an incident", async () => {
+    const ref: { current: StressController | null } = { current: null };
+    const { rerender } = render(<Host controllerRef={ref} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(ref.current).not.toBeNull();
+
+    rerender(<StressTestPanel incidentId={null} active shock={null} onShockResult={vi.fn()} onGraphChange={vi.fn()} onNotify={vi.fn()} controllerRef={ref} />);
+    expect(ref.current).toBeNull();
   });
 });
