@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npx --yes vite-node src/tests/verify_ui.tsx"
   },
   "dependencies": {
     "react": "^18.3.1",
