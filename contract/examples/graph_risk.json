@@ -391,22 +391,6 @@
   ],
   "edges": [
    {
-    "id": "svc:web-frontend|DEPENDS_ON|svc:auth-service",
-    "source": "svc:web-frontend",
-    "target": "svc:auth-service",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": false
-   },
-   {
-    "id": "svc:web-frontend|DEPENDS_ON|svc:cart",
-    "source": "svc:web-frontend",
-    "target": "svc:cart",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": false
-   },
-   {
     "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
     "source": "svc:web-frontend",
     "target": "svc:checkout",
@@ -431,24 +415,16 @@
     "highlight": false
    },
    {
-    "id": "svc:mobile-bff|DEPENDS_ON|svc:auth-service",
-    "source": "svc:mobile-bff",
+    "id": "svc:web-frontend|DEPENDS_ON|svc:auth-service",
+    "source": "svc:web-frontend",
     "target": "svc:auth-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
    },
    {
-    "id": "svc:mobile-bff|DEPENDS_ON|svc:user-profile",
-    "source": "svc:mobile-bff",
-    "target": "svc:user-profile",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": false
-   },
-   {
-    "id": "svc:mobile-bff|DEPENDS_ON|svc:cart",
-    "source": "svc:mobile-bff",
+    "id": "svc:web-frontend|DEPENDS_ON|svc:cart",
+    "source": "svc:web-frontend",
     "target": "svc:cart",
     "type": "DEPENDS_ON",
     "props": {},
@@ -471,24 +447,24 @@
     "highlight": false
    },
    {
-    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
-    "source": "svc:checkout",
-    "target": "svc:order-service",
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:user-profile",
+    "source": "svc:mobile-bff",
+    "target": "svc:user-profile",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
    },
    {
-    "id": "svc:checkout|DEPENDS_ON|svc:shipping-quotes",
-    "source": "svc:checkout",
-    "target": "svc:shipping-quotes",
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:auth-service",
+    "source": "svc:mobile-bff",
+    "target": "svc:auth-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
    },
    {
-    "id": "svc:checkout|DEPENDS_ON|svc:cart",
-    "source": "svc:checkout",
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:cart",
+    "source": "svc:mobile-bff",
     "target": "svc:cart",
     "type": "DEPENDS_ON",
     "props": {},
@@ -498,6 +474,14 @@
     "id": "svc:checkout|DEPENDS_ON|svc:inventory",
     "source": "svc:checkout",
     "target": "svc:inventory",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:shipping-quotes",
+    "source": "svc:checkout",
+    "target": "svc:shipping-quotes",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
@@ -519,6 +503,30 @@
     "highlight": true
    },
    {
+    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
+    "source": "svc:checkout",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:cart",
+    "source": "svc:checkout",
+    "target": "svc:cart",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:cart|DEPENDS_ON|svc:inventory",
+    "source": "svc:cart",
+    "target": "svc:inventory",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
     "id": "svc:cart|DEPENDS_ON|svc:feature-flags",
     "source": "svc:cart",
     "target": "svc:feature-flags",
@@ -535,8 +543,8 @@
     "highlight": false
    },
    {
-    "id": "svc:cart|DEPENDS_ON|svc:inventory",
-    "source": "svc:cart",
+    "id": "svc:order-service|DEPENDS_ON|svc:inventory",
+    "source": "svc:order-service",
     "target": "svc:inventory",
     "type": "DEPENDS_ON",
     "props": {},
@@ -557,14 +565,6 @@
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
-   },
-   {
-    "id": "svc:order-service|DEPENDS_ON|svc:inventory",
-    "source": "svc:order-service",
-    "target": "svc:inventory",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": false
    },
    {
     "id": "svc:search|DEPENDS_ON|svc:redis-cache",
@@ -591,17 +591,17 @@
     "highlight": false
    },
    {
-    "id": "svc:inventory|DEPENDS_ON|svc:redis-cache",
+    "id": "svc:inventory|DEPENDS_ON|svc:kafka-bus",
     "source": "svc:inventory",
-    "target": "svc:redis-cache",
+    "target": "svc:kafka-bus",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
    },
    {
-    "id": "svc:inventory|DEPENDS_ON|svc:kafka-bus",
+    "id": "svc:inventory|DEPENDS_ON|svc:redis-cache",
     "source": "svc:inventory",
-    "target": "svc:kafka-bus",
+    "target": "svc:redis-cache",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
@@ -727,9 +727,9 @@
     "highlight": false
    },
    {
-    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
+    "id": "svc:admin-portal|DEPENDS_ON|svc:auth-service",
     "source": "svc:admin-portal",
-    "target": "svc:order-service",
+    "target": "svc:auth-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false
@@ -743,9 +743,9 @@
     "highlight": false
    },
    {
-    "id": "svc:admin-portal|DEPENDS_ON|svc:auth-service",
+    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
     "source": "svc:admin-portal",
-    "target": "svc:auth-service",
+    "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": false

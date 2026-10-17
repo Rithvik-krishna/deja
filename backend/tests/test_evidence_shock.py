@@ -1,248 +1,191 @@
-"""Tests for the Evidence Shock Lab endpoints and logic.
+"""Comprehensive tests for Evidence Shock Lab (ProofOps layer).
 
-These tests run entirely in MODE=mock (no Neo4j required).
-They verify:
-  - The shock response has the correct structure.
-  - F(e) scores are non-negative and scenarios are sorted descending by impact.
-  - `diagnosis_robust` / `diagnosis_changed` are consistent.
-  - Removing deploy evidence for payments-api (which has both deploy + history)
-    reduces its score but the top suspect may or may not change (both outcomes
-    are valid; we just check the math is correct).
-  - The /insights/hypotheses/{incident_id} endpoint returns ranked hypotheses.
-  - The chat agent responds to "stress test" trigger phrases.
+Verifies all contract and analytical invariants:
+  (a) create_alert for checkout+latency -> hypotheses scores == alert.suspects scores
+  (b) removing source incident-history -> verdict inconclusive with payments-api and inventory tied at 3.5
+  (c) removing source cicd-deploy-log -> verdict robust (payments-api first)
+  (d) the incident is never in its own evidence
+  (e) unknown incident IDs -> 404
+  (f) contract backwards compatibility: every v1 path and component in openapi.v1.json
+      is unchanged in the new openapi.json
 """
+import json
 import pytest
+from fastapi.testclient import TestClient
 
+from app import config
+from app.deps import get_engine, set_engine
+from app.main import app
 from app.mock_engine import MockEngine
-from app.chat import handle_chat, SESSIONS
-from app.schemas import AlertRequest, ChatRequest
-
-ENGINE = MockEngine()
+from app.schemas import AlertRequest
 
 
-# ------------------------------------------------------------------ helpers
-
-def _ensure_open_incident():
-    """Return an open incident, creating one via alert if the seed has none."""
-    incs = ENGINE.list_incidents(status="open")
-    if incs:
-        return incs[0]
-    # Seed may have all incidents resolved; open one against the first service.
-    svc = ENGINE.catalog().services[0].name
-    r = ENGINE.create_alert(AlertRequest(service=svc, symptom="latency"))
-    return r.incident
+@pytest.fixture
+def client():
+    e = MockEngine()
+    set_engine(e)
+    with TestClient(app) as c:
+        yield c
 
 
-def _first_resolved_incident():
-    incs = ENGINE.list_incidents(status="resolved")
-    assert incs, "Need at least one resolved incident in seed data"
-    return incs[0]
+def test_v1_contract_backwards_compatibility(client):
+    """Assert every v1 path and component is unchanged in the new openapi spec."""
+    v1_file = config.ROOT / "contract" / "openapi.v1.json"
+    assert v1_file.exists(), "contract/openapi.v1.json must exist as snapshot"
+    v1 = json.loads(v1_file.read_text())
+    v1_1 = client.get("/openapi.json").json()
+
+    # 1. Assert all v1 paths exist in v1.1 and have identical methods & parameters
+    for path, v1_methods in v1["paths"].items():
+        assert path in v1_1["paths"], f"v1 path '{path}' missing from v1.1 openapi.json"
+        for method, v1_op in v1_methods.items():
+            assert method in v1_1["paths"][path], f"v1 method '{method}' for '{path}' missing from v1.1"
+            op = v1_1["paths"][path][method]
+            assert op.get("parameters") == v1_op.get("parameters"), f"Parameters changed for {method} {path}"
+
+    # 2. Assert all v1 component schemas exist in v1.1 and are identical
+    v1_schemas = v1.get("components", {}).get("schemas", {})
+    v1_1_schemas = v1_1.get("components", {}).get("schemas", {})
+    for schema_name, v1_schema in v1_schemas.items():
+        assert schema_name in v1_1_schemas, f"v1 schema '{schema_name}' missing from v1.1"
+        assert v1_schema == v1_1_schemas[schema_name], f"v1 schema '{schema_name}' changed in v1.1"
 
 
-# ------------------------------------------------------------------ pure shock logic
+def test_create_alert_hypotheses_scores_equal_suspects_scores(client):
+    """(a) create_alert for checkout+latency, then hypotheses scores == alert.suspects scores."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    assert alert_resp.status_code == 200
+    alert_data = alert_resp.json()
+    incident_id = alert_data["incident"]["id"]
+    alert_suspects = {s["service"]: s["score"] for s in alert_data["suspects"]}
 
-class TestRunShock:
-    """Unit-tests for evidence_shock.run_shock with synthetic inputs."""
+    # Query GET /insights/hypotheses/{incident_id}
+    hyp_resp = client.get(f"/insights/hypotheses/{incident_id}")
+    assert hyp_resp.status_code == 200
+    hyp_data = hyp_resp.json()
+    hyp_scores = {h["service"]: h["score"] for h in hyp_data["hypotheses"]}
 
-    def setup_method(self):
-        from app.evidence_shock import RawSuspect, run_shock
-        self.RS = RawSuspect
-        self.run = run_shock
-
-    def test_empty_suspects(self):
-        r = self.run("INC-000", "svc", "latency", [])
-        assert r.diagnosis_robust is True
-        assert r.scenarios == []
-        assert r.suspects == []
-
-    def test_single_suspect_no_evidence(self):
-        raw = [self.RS("svc-a", hops=0, has_recent_deploy=False, same_symptom_incidents=0)]
-        r = self.run("INC-001", "svc-a", "latency", raw)
-        assert len(r.suspects) == 1
-        assert r.suspects[0].rank == 1
-        # Only PROXIMITY contributes → score = 1/(0+1) = 1.0
-        assert r.suspects[0].score == pytest.approx(1.0, abs=0.01)
-        # No removable evidence → no scenarios
-        assert r.scenarios == []
-        assert r.diagnosis_robust is True
-
-    def test_deploy_contributes_3(self):
-        raw = [
-            self.RS("svc-a", hops=0, has_recent_deploy=True, same_symptom_incidents=0, deploy_id="DEP-x"),
-            self.RS("svc-b", hops=1, has_recent_deploy=False, same_symptom_incidents=0),
-        ]
-        r = self.run("INC-002", "svc-a", "latency", raw)
-        top = r.suspects[0]
-        # svc-a score = 3 + 0 + 1/(0+1) = 4.0
-        assert top.service == "svc-a"
-        assert top.score == pytest.approx(4.0, abs=0.01)
-
-    def test_shock_removes_deploy_reduces_score(self):
-        raw = [
-            self.RS("svc-a", hops=0, has_recent_deploy=True, same_symptom_incidents=2, deploy_id="DEP-y"),
-            self.RS("svc-b", hops=1, has_recent_deploy=False, same_symptom_incidents=0),
-        ]
-        r = self.run("INC-003", "svc-a", "latency", raw)
-        # Find the deploy scenario
-        deploy_sc = next((sc for sc in r.scenarios if sc.evidence_type == "RECENT_DEPLOY"), None)
-        assert deploy_sc is not None
-        a_delta = next(d for d in deploy_sc.suspect_deltas if d["service"] == "svc-a")
-        # Removing deploy should reduce svc-a score by 3
-        assert a_delta["score_before"] - a_delta["score_after"] == pytest.approx(3.0, abs=0.01)
-
-    def test_scenarios_sorted_by_impact_desc(self):
-        raw = [
-            self.RS("svc-a", hops=0, has_recent_deploy=True, same_symptom_incidents=5, deploy_id="DEP-z"),
-            self.RS("svc-b", hops=1, has_recent_deploy=False, same_symptom_incidents=0),
-        ]
-        r = self.run("INC-004", "svc-a", "latency", raw)
-        impacts = [sc.impact_score for sc in r.scenarios]
-        assert impacts == sorted(impacts, reverse=True)
-
-    def test_critical_flag_on_first_scenario(self):
-        raw = [
-            self.RS("svc-a", hops=0, has_recent_deploy=True, same_symptom_incidents=1, deploy_id="DEP-q"),
-        ]
-        r = self.run("INC-005", "svc-a", "latency", raw)
-        if r.scenarios:
-            assert r.scenarios[0].is_critical is True
-            for sc in r.scenarios[1:]:
-                assert sc.is_critical is False
-
-    def test_f_e_non_negative(self):
-        raw = [
-            self.RS("svc-a", hops=0, has_recent_deploy=True, same_symptom_incidents=3, deploy_id="DEP-r"),
-            self.RS("svc-b", hops=2, has_recent_deploy=True, same_symptom_incidents=1, deploy_id="DEP-s"),
-        ]
-        r = self.run("INC-006", "svc-a", "latency", raw)
-        for sc in r.scenarios:
-            assert sc.impact_score >= 0.0
-
-
-# ------------------------------------------------------------------ MockEngine integration
-
-class TestEvidenceShockEndpoint:
-    """Tests against the full MockEngine via the evidence_shock() method."""
-
-    def test_shock_on_open_incident_returns_valid_structure(self):
-        inc = _ensure_open_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-
-        assert r.incident_id == inc.id
-        assert r.service == svc
-        assert r.symptom == inc.symptom
-        assert isinstance(r.diagnosis_robust, bool)
-        assert isinstance(r.robustness_note, str)
-        assert len(r.robustness_note) > 0
-
-    def test_hypotheses_are_ranked(self):
-        inc = _ensure_open_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-
-        ranks = [h.rank for h in r.hypotheses]
-        assert ranks == list(range(1, len(ranks) + 1))
-
-    def test_each_hypothesis_has_evidence(self):
-        inc = _ensure_open_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-
-        for h in r.hypotheses:
-            assert len(h.evidence) >= 1, f"{h.service} has no evidence items"
-            for e in h.evidence:
-                assert e.evidence_type in ("RECENT_DEPLOY", "SAME_SYMPTOM", "PROXIMITY")
-                assert e.weight >= 0
-                assert e.suspect == h.service
-
-    def test_scenarios_consistent_with_diagnosis_robust(self):
-        inc = _ensure_open_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-
-        any_changed = any(sc.diagnosis_changed for sc in r.scenarios)
-        assert r.diagnosis_robust == (not any_changed)
-
-    def test_graph_payload_present(self):
-        inc = _ensure_open_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-        assert len(r.graph.nodes) > 0
-
-    def test_resolved_incident_also_works(self):
-        inc = _first_resolved_incident()
-        detail = ENGINE.incident(inc.id)
-        svc = detail.impacted[0] if detail.impacted else detail.origin
-        r = ENGINE.evidence_shock(inc.id, svc, inc.symptom)
-        assert r.incident_id == inc.id
-
-
-# ------------------------------------------------------------------ hypotheses endpoint
-
-class TestHypothesesEndpoint:
-    def test_returns_ranked_hypotheses(self):
-        inc = _ensure_open_incident()
-        r = ENGINE.hypotheses(inc.id)
-        assert r.incident_id == inc.id
-        assert len(r.hypotheses) >= 1
-        ranks = [h.rank for h in r.hypotheses]
-        assert ranks == list(range(1, len(ranks) + 1))
-
-    def test_hypotheses_scores_descending(self):
-        inc = _ensure_open_incident()
-        r = ENGINE.hypotheses(inc.id)
-        scores = [h.score for h in r.hypotheses]
-        assert scores == sorted(scores, reverse=True) or all(
-            scores[i] >= scores[i + 1] for i in range(len(scores) - 1)
+    # Scores must be identical for each suspect
+    for svc, expected_score in alert_suspects.items():
+        assert svc in hyp_scores, f"Suspect {svc} missing from hypotheses"
+        assert pytest.approx(expected_score, abs=0.001) == hyp_scores[svc], (
+            f"Hypothesis score mismatch for {svc}: alert={expected_score}, hypothesis={hyp_scores[svc]}"
         )
 
-    def test_unknown_incident_raises(self):
-        from app.engine import NotFound
-        with pytest.raises(NotFound):
-            ENGINE.hypotheses("INC-999")
+
+def test_removing_incident_history_verdict_inconclusive_tied_at_3_5(client):
+    """(b) removing source incident-history gives verdict inconclusive with payments-api and inventory tied at 3.5."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    incident_id = alert_resp.json()["incident"]["id"]
+
+    shock_resp = client.post(
+        "/insights/evidence-shock",
+        json={
+            "incident_id": incident_id,
+            "remove_sources": ["incident-history"],
+        },
+    )
+    assert shock_resp.status_code == 200
+    res = shock_resp.json()
+
+    assert res["verdict"] == "inconclusive"
+    assert res["margin_after"] <= 0.25
+
+    hyp_by_svc = {h["service"]: h for h in res["hypotheses"]}
+    assert "payments-api" in hyp_by_svc
+    assert "inventory" in hyp_by_svc
+
+    # Both payments-api and inventory must be tied at 3.5
+    assert pytest.approx(3.5, abs=0.001) == hyp_by_svc["payments-api"]["score_after"]
+    assert pytest.approx(3.5, abs=0.001) == hyp_by_svc["inventory"]["score_after"]
 
 
-# ------------------------------------------------------------------ chat integration
+def test_removing_deploy_log_verdict_robust_payments_first(client):
+    """(c) removing source cicd-deploy-log stays robust (payments-api first)."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    incident_id = alert_resp.json()["incident"]["id"]
 
-class TestChatShockIntent:
-    """Test that the chat agent triggers evidence_shock on the right phrases."""
+    shock_resp = client.post(
+        "/insights/evidence-shock",
+        json={
+            "incident_id": incident_id,
+            "remove_sources": ["cicd-deploy-log"],
+        },
+    )
+    assert shock_resp.status_code == 200
+    res = shock_resp.json()
 
-    def setup_method(self):
-        ENGINE.reset()
-        SESSIONS.clear()
-        # Pre-open an incident using the first service in the catalog
-        svc = ENGINE.catalog().services[0].name
-        ENGINE.create_alert(AlertRequest(service=svc, symptom="latency"))
+    assert res["verdict"] == "robust"
+    assert res["top_suspect_after"] == "payments-api"
+    assert res["margin_after"] > 0.25
 
-    @pytest.mark.parametrize("phrase", [
-        "stress test the diagnosis",
-        "challenge the diagnosis",
-        "what if the deploy evidence is wrong?",
-        "shock the evidence",
-        "is the diagnosis fragile?",
-        "what changes if we remove evidence?",
-        "show me alternative hypotheses",
-    ])
-    def test_shock_phrases_trigger_shock_intent(self, phrase):
-        r = handle_chat(ENGINE, ChatRequest(session_id="test-shock", message=phrase))
-        assert r.intent == "evidence_shock", f"Expected evidence_shock intent for: {phrase!r}, got {r.intent!r}"
-        assert any(tc.name == "evidence_shock" for tc in r.tool_calls)
-        assert len(r.recalled) > 0
 
-    def test_shock_response_contains_robustness_info(self):
-        r = handle_chat(ENGINE, ChatRequest(session_id="test-shock-2", message="stress test diagnosis"))
-        assert "ROBUST" in r.reply or "FRAGILE" in r.reply
-        assert "evidence" in r.reply.lower()
+def test_incident_is_never_in_its_own_evidence(client):
+    """(d) the incident is never in its own evidence."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    incident_id = alert_resp.json()["incident"]["id"]
 
-    def test_shock_without_open_incident_returns_no_incident(self):
-        SESSIONS.clear()
-        ENGINE.reset()
-        # Don't open any incident
-        r = handle_chat(ENGINE, ChatRequest(session_id="empty-sess", message="stress test diagnosis"))
-        assert r.intent == "no_incident"
+    hyp_resp = client.get(f"/insights/hypotheses/{incident_id}")
+    assert hyp_resp.status_code == 200
+    hyp_data = hyp_resp.json()
+
+    self_ev_id = f"ev:history:{incident_id}"
+    for h in hyp_data["hypotheses"]:
+        for e in h["evidence"]:
+            assert e["id"] != self_ev_id, f"Incident {incident_id} appears in its own evidence list!"
+
+
+def test_unknown_incident_id_returns_404(client):
+    """(e) unknown incident IDs return 404."""
+    r_get = client.get("/insights/hypotheses/INC-999")
+    assert r_get.status_code == 404
+
+    r_post = client.post("/insights/evidence-shock", json={"incident_id": "INC-999"})
+    assert r_post.status_code == 404
+
+
+def test_mismatched_service_or_symptom_returns_400(client):
+    """Optional service/symptom must match the incident or return 400."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    incident_id = alert_resp.json()["incident"]["id"]
+
+    r_bad_svc = client.post(
+        "/insights/evidence-shock",
+        json={"incident_id": incident_id, "service": "redis-cache"},
+    )
+    assert r_bad_svc.status_code == 400
+
+    r_bad_sym = client.post(
+        "/insights/evidence-shock",
+        json={"incident_id": incident_id, "symptom": "oom"},
+    )
+    assert r_bad_sym.status_code == 400
+
+
+def test_graph_payload_nodes_and_edges(client):
+    """Verify Graph payload includes Service and Evidence nodes with SUPPORTS edges."""
+    alert_resp = client.post("/alert", json={"service": "checkout", "symptom": "latency"})
+    incident_id = alert_resp.json()["incident"]["id"]
+
+    shock_resp = client.post(
+        "/insights/evidence-shock",
+        json={"incident_id": incident_id, "remove_sources": ["cicd-deploy-log"]},
+    )
+    res = shock_resp.json()
+    graph = res["graph"]
+
+    assert len(graph["nodes"]) > 0
+    assert len(graph["edges"]) > 0
+
+    node_labels = {n["label"] for n in graph["nodes"]}
+    assert "Service" in node_labels
+    assert "Evidence" in node_labels
+
+    edge_types = {e["type"] for e in graph["edges"]}
+    assert "SUPPORTS" in edge_types
+
+    # Ensure removed deploy evidence has props.removed == True and is highlighted
+    deploy_nodes = [n for n in graph["nodes"] if n["label"] == "Evidence" and n["props"].get("kind") == "deploy"]
+    for dn in deploy_nodes:
+        assert dn["props"]["removed"] is True
+        assert dn["highlight"] is True

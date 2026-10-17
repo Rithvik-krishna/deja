@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api import router
+from .api_shock import router as shock_router
 from .engine import BadRequest, NotFound
 
-app = FastAPI(title="Deja API", version="1.0.0",
+app = FastAPI(title="Deja API", version="1.1.0",
               description="Incident copilot with institutional memory (Neo4j). Contract is frozen: see docs/API_CONTRACT.md")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
+app.include_router(shock_router)
 
 
 @app.exception_handler(NotFound)

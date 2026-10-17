@@ -1,0 +1,2253 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Deja API",
+  "description": "Incident copilot with institutional memory (Neo4j). Contract is frozen: see docs/API_CONTRACT.md",
+  "version": "1.0.0"
+ },
+ "paths": {
+  "/health": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Health"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/catalog": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Catalog",
+    "operationId": "catalog_catalog_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Catalog"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/demo/reset": {
+   "post": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Demo Reset",
+    "operationId": "demo_reset_demo_reset_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DemoResetResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/graph/risk": {
+   "get": {
+    "tags": [
+     "insights"
+    ],
+    "summary": "Graph Risk",
+    "operationId": "graph_risk_graph_risk_get",
+    "parameters": [
+     {
+      "name": "window_days",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 730,
+       "minimum": 1,
+       "default": 180,
+       "title": "Window Days"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 50,
+       "minimum": 1,
+       "default": 10,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "as_of",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "As Of"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/graph/blast/{service}": {
+   "get": {
+    "tags": [
+     "insights"
+    ],
+    "summary": "Graph Blast",
+    "operationId": "graph_blast_graph_blast__service__get",
+    "parameters": [
+     {
+      "name": "service",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Service"
+      }
+     },
+     {
+      "name": "depth",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 6,
+       "minimum": 1,
+       "default": 3,
+       "title": "Depth"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BlastResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/insights/similar-incidents": {
+   "get": {
+    "tags": [
+     "insights"
+    ],
+    "summary": "Similar Incidents",
+    "operationId": "similar_incidents_insights_similar_incidents_get",
+    "parameters": [
+     {
+      "name": "service",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Service"
+      }
+     },
+     {
+      "name": "symptom",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "latency",
+          "timeout",
+          "5xx",
+          "oom"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Symptom"
+      }
+     },
+     {
+      "name": "origin",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Origin"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 20,
+       "minimum": 1,
+       "default": 5,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SimilarIncident"
+         },
+         "title": "Response Similar Incidents Insights Similar Incidents Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/insights/fix-stats": {
+   "get": {
+    "tags": [
+     "insights"
+    ],
+    "summary": "Fix Stats",
+    "operationId": "fix_stats_insights_fix_stats_get",
+    "parameters": [
+     {
+      "name": "service",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Service"
+      }
+     },
+     {
+      "name": "symptom",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "latency",
+          "timeout",
+          "5xx",
+          "oom"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Symptom"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/FixStat"
+         },
+         "title": "Response Fix Stats Insights Fix Stats Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/owner": {
+   "get": {
+    "tags": [
+     "ownership"
+    ],
+    "summary": "Owner",
+    "operationId": "owner_owner_get",
+    "parameters": [
+     {
+      "name": "service",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Service"
+      }
+     },
+     {
+      "name": "date",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OwnerResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "ownership"
+    ],
+    "summary": "Reassign",
+    "operationId": "reassign_owner_post",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReassignRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReassignResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/alert": {
+   "post": {
+    "tags": [
+     "incidents"
+    ],
+    "summary": "Alert",
+    "operationId": "alert_alert_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AlertRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/outcome": {
+   "post": {
+    "tags": [
+     "incidents"
+    ],
+    "summary": "Outcome",
+    "operationId": "outcome_outcome_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OutcomeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OutcomeResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents": {
+   "get": {
+    "tags": [
+     "incidents"
+    ],
+    "summary": "Incidents",
+    "operationId": "incidents_incidents_get",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "open",
+          "resolved"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/IncidentSummary"
+         },
+         "title": "Response Incidents Incidents Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/{incident_id}": {
+   "get": {
+    "tags": [
+     "incidents"
+    ],
+    "summary": "Incident",
+    "operationId": "incident_incidents__incident_id__get",
+    "parameters": [
+     {
+      "name": "incident_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Incident Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/{incident_id}/timeline": {
+   "get": {
+    "tags": [
+     "incidents"
+    ],
+    "summary": "Timeline",
+    "operationId": "timeline_incidents__incident_id__timeline_get",
+    "parameters": [
+     {
+      "name": "incident_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Incident Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/TimelineEvent"
+         },
+         "title": "Response Timeline Incidents  Incident Id  Timeline Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/chat": {
+   "post": {
+    "tags": [
+     "chat"
+    ],
+    "summary": "Chat",
+    "operationId": "chat_chat_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChatRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChatResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/sessions/wipe": {
+   "post": {
+    "tags": [
+     "chat"
+    ],
+    "summary": "Sessions Wipe",
+    "description": "Clears short-term chat state only. Graph memory is untouched - that is the point of the demo.",
+    "operationId": "sessions_wipe_sessions_wipe_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WipeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WipeResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AlertRequest": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service",
+      "description": "Service where the symptom is observed"
+     },
+     "symptom": {
+      "type": "string",
+      "enum": [
+       "latency",
+       "timeout",
+       "5xx",
+       "oom"
+      ],
+      "title": "Symptom"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "severity": {
+      "type": "string",
+      "enum": [
+       "SEV1",
+       "SEV2",
+       "SEV3"
+      ],
+      "title": "Severity",
+      "default": "SEV2"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "symptom"
+    ],
+    "title": "AlertRequest"
+   },
+   "AlertResponse": {
+    "properties": {
+     "incident": {
+      "$ref": "#/components/schemas/IncidentSummary"
+     },
+     "likely_origin": {
+      "type": "string",
+      "title": "Likely Origin"
+     },
+     "suspects": {
+      "items": {
+       "$ref": "#/components/schemas/Suspect"
+      },
+      "type": "array",
+      "title": "Suspects"
+     },
+     "similar_incidents": {
+      "items": {
+       "$ref": "#/components/schemas/SimilarIncident"
+      },
+      "type": "array",
+      "title": "Similar Incidents"
+     },
+     "recommendations": {
+      "items": {
+       "$ref": "#/components/schemas/Recommendation"
+      },
+      "type": "array",
+      "title": "Recommendations"
+     },
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload"
+     }
+    },
+    "type": "object",
+    "required": [
+     "incident",
+     "likely_origin",
+     "suspects",
+     "similar_incidents",
+     "recommendations",
+     "graph"
+    ],
+    "title": "AlertResponse"
+   },
+   "AttemptSummary": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "fix": {
+      "type": "string",
+      "title": "Fix"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "SUCCESS",
+       "FAILED"
+      ],
+      "title": "Status"
+     },
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "engineer": {
+      "type": "string",
+      "title": "Engineer"
+     },
+     "notes": {
+      "type": "string",
+      "title": "Notes",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "fix",
+     "status",
+     "ts",
+     "engineer"
+    ],
+    "title": "AttemptSummary"
+   },
+   "BlastItem": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "tier": {
+      "type": "string",
+      "title": "Tier"
+     },
+     "hops": {
+      "type": "integer",
+      "title": "Hops"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "tier",
+     "hops"
+    ],
+    "title": "BlastItem"
+   },
+   "BlastResponse": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "depth": {
+      "type": "integer",
+      "title": "Depth"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "impacted": {
+      "items": {
+       "$ref": "#/components/schemas/BlastItem"
+      },
+      "type": "array",
+      "title": "Impacted"
+     },
+     "recent_deploys": {
+      "items": {
+       "$ref": "#/components/schemas/DeploySummary"
+      },
+      "type": "array",
+      "title": "Recent Deploys"
+     },
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "depth",
+     "total",
+     "impacted",
+     "recent_deploys",
+     "graph"
+    ],
+    "title": "BlastResponse"
+   },
+   "Catalog": {
+    "properties": {
+     "services": {
+      "items": {
+       "$ref": "#/components/schemas/CatalogService"
+      },
+      "type": "array",
+      "title": "Services"
+     },
+     "fixes": {
+      "items": {
+       "$ref": "#/components/schemas/CatalogFix"
+      },
+      "type": "array",
+      "title": "Fixes"
+     },
+     "engineers": {
+      "items": {
+       "$ref": "#/components/schemas/CatalogEngineer"
+      },
+      "type": "array",
+      "title": "Engineers"
+     },
+     "symptoms": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Symptoms"
+     }
+    },
+    "type": "object",
+    "required": [
+     "services",
+     "fixes",
+     "engineers",
+     "symptoms"
+    ],
+    "title": "Catalog"
+   },
+   "CatalogEngineer": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "team": {
+      "type": "string",
+      "title": "Team"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "team"
+    ],
+    "title": "CatalogEngineer"
+   },
+   "CatalogFix": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "description"
+    ],
+    "title": "CatalogFix"
+   },
+   "CatalogService": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "tier": {
+      "type": "string",
+      "title": "Tier"
+     },
+     "team": {
+      "type": "string",
+      "title": "Team"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "tier",
+     "team"
+    ],
+    "title": "CatalogService"
+   },
+   "ChatRequest": {
+    "properties": {
+     "session_id": {
+      "type": "string",
+      "title": "Session Id"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "session_id",
+     "message"
+    ],
+    "title": "ChatRequest"
+   },
+   "ChatResponse": {
+    "properties": {
+     "session_id": {
+      "type": "string",
+      "title": "Session Id"
+     },
+     "reply": {
+      "type": "string",
+      "title": "Reply"
+     },
+     "intent": {
+      "type": "string",
+      "title": "Intent",
+      "default": ""
+     },
+     "incident_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Incident Id"
+     },
+     "tool_calls": {
+      "items": {
+       "$ref": "#/components/schemas/ToolCall"
+      },
+      "type": "array",
+      "title": "Tool Calls",
+      "default": []
+     },
+     "recalled": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Recalled",
+      "description": "Facts recovered from graph memory (not from chat history)",
+      "default": []
+     },
+     "graph": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/GraphPayload"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "session_id",
+     "reply"
+    ],
+    "title": "ChatResponse"
+   },
+   "DemoResetResponse": {
+    "properties": {
+     "ok": {
+      "type": "boolean",
+      "title": "Ok"
+     },
+     "counts": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Counts"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ok",
+     "counts"
+    ],
+    "title": "DemoResetResponse"
+   },
+   "DeploySummary": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "deployed_at": {
+      "type": "string",
+      "title": "Deployed At"
+     },
+     "author": {
+      "type": "string",
+      "title": "Author"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "service",
+     "version",
+     "deployed_at",
+     "author"
+    ],
+    "title": "DeploySummary"
+   },
+   "FixStat": {
+    "properties": {
+     "fix": {
+      "type": "string",
+      "title": "Fix"
+     },
+     "attempts": {
+      "type": "integer",
+      "title": "Attempts"
+     },
+     "successes": {
+      "type": "integer",
+      "title": "Successes"
+     },
+     "failures": {
+      "type": "integer",
+      "title": "Failures"
+     },
+     "success_rate": {
+      "type": "number",
+      "title": "Success Rate"
+     },
+     "smoothed_score": {
+      "type": "number",
+      "title": "Smoothed Score",
+      "description": "(successes+1)/(attempts+2)"
+     },
+     "avoid": {
+      "type": "boolean",
+      "title": "Avoid",
+      "description": "attempts>=3 and successes==0"
+     }
+    },
+    "type": "object",
+    "required": [
+     "fix",
+     "attempts",
+     "successes",
+     "failures",
+     "success_rate",
+     "smoothed_score",
+     "avoid"
+    ],
+    "title": "FixStat"
+   },
+   "GraphEdge": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "target": {
+      "type": "string",
+      "title": "Target"
+     },
+     "type": {
+      "type": "string",
+      "title": "Type",
+      "description": "DEPENDS_ON | OWNS | TO | AUTHORED_BY | ORIGINATED_IN | IMPACTED | FOLLOWED | ATTEMPTED(collapsed, props.status)"
+     },
+     "props": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Props",
+      "default": {}
+     },
+     "highlight": {
+      "type": "boolean",
+      "title": "Highlight",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "source",
+     "target",
+     "type"
+    ],
+    "title": "GraphEdge"
+   },
+   "GraphNode": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label",
+      "description": "Service | Engineer | Deploy | Incident | Fix"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "props": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Props",
+      "default": {}
+     },
+     "highlight": {
+      "type": "boolean",
+      "title": "Highlight",
+      "default": false
+     },
+     "score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "label",
+     "name"
+    ],
+    "title": "GraphNode"
+   },
+   "GraphPayload": {
+    "properties": {
+     "nodes": {
+      "items": {
+       "$ref": "#/components/schemas/GraphNode"
+      },
+      "type": "array",
+      "title": "Nodes",
+      "default": []
+     },
+     "edges": {
+      "items": {
+       "$ref": "#/components/schemas/GraphEdge"
+      },
+      "type": "array",
+      "title": "Edges",
+      "default": []
+     }
+    },
+    "type": "object",
+    "title": "GraphPayload"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Health": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "mode": {
+      "type": "string",
+      "title": "Mode"
+     },
+     "neo4j": {
+      "type": "boolean",
+      "title": "Neo4J"
+     }
+    },
+    "type": "object",
+    "required": [
+     "status",
+     "mode",
+     "neo4j"
+    ],
+    "title": "Health"
+   },
+   "IncidentDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "severity": {
+      "type": "string",
+      "enum": [
+       "SEV1",
+       "SEV2",
+       "SEV3"
+      ],
+      "title": "Severity"
+     },
+     "symptom": {
+      "type": "string",
+      "enum": [
+       "latency",
+       "timeout",
+       "5xx",
+       "oom"
+      ],
+      "title": "Symptom"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "open",
+       "resolved"
+      ],
+      "title": "Status"
+     },
+     "started_at": {
+      "type": "string",
+      "title": "Started At"
+     },
+     "origin": {
+      "type": "string",
+      "title": "Origin",
+      "description": "Service where the root cause sits (hypothesised for open incidents)"
+     },
+     "impacted": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Impacted",
+      "default": []
+     },
+     "resolved_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Resolved At"
+     },
+     "summary": {
+      "type": "string",
+      "title": "Summary",
+      "default": ""
+     },
+     "followed_deploy": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DeploySummary"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "attempts": {
+      "items": {
+       "$ref": "#/components/schemas/AttemptSummary"
+      },
+      "type": "array",
+      "title": "Attempts",
+      "default": []
+     },
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload",
+      "default": {
+       "nodes": [],
+       "edges": []
+      }
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "title",
+     "severity",
+     "symptom",
+     "status",
+     "started_at",
+     "origin"
+    ],
+    "title": "IncidentDetail"
+   },
+   "IncidentSummary": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "severity": {
+      "type": "string",
+      "enum": [
+       "SEV1",
+       "SEV2",
+       "SEV3"
+      ],
+      "title": "Severity"
+     },
+     "symptom": {
+      "type": "string",
+      "enum": [
+       "latency",
+       "timeout",
+       "5xx",
+       "oom"
+      ],
+      "title": "Symptom"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "open",
+       "resolved"
+      ],
+      "title": "Status"
+     },
+     "started_at": {
+      "type": "string",
+      "title": "Started At"
+     },
+     "origin": {
+      "type": "string",
+      "title": "Origin",
+      "description": "Service where the root cause sits (hypothesised for open incidents)"
+     },
+     "impacted": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Impacted",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "title",
+     "severity",
+     "symptom",
+     "status",
+     "started_at",
+     "origin"
+    ],
+    "title": "IncidentSummary"
+   },
+   "OutcomeRequest": {
+    "properties": {
+     "incident_id": {
+      "type": "string",
+      "title": "Incident Id"
+     },
+     "fix": {
+      "type": "string",
+      "title": "Fix"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "SUCCESS",
+       "FAILED"
+      ],
+      "title": "Status"
+     },
+     "notes": {
+      "type": "string",
+      "title": "Notes",
+      "default": ""
+     },
+     "engineer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Engineer"
+     }
+    },
+    "type": "object",
+    "required": [
+     "incident_id",
+     "fix",
+     "status"
+    ],
+    "title": "OutcomeRequest"
+   },
+   "OutcomeResponse": {
+    "properties": {
+     "attempt": {
+      "$ref": "#/components/schemas/AttemptSummary"
+     },
+     "incident": {
+      "$ref": "#/components/schemas/IncidentSummary"
+     },
+     "recommendations": {
+      "items": {
+       "$ref": "#/components/schemas/Recommendation"
+      },
+      "type": "array",
+      "title": "Recommendations"
+     },
+     "fix_stats": {
+      "items": {
+       "$ref": "#/components/schemas/FixStat"
+      },
+      "type": "array",
+      "title": "Fix Stats"
+     },
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload"
+     }
+    },
+    "type": "object",
+    "required": [
+     "attempt",
+     "incident",
+     "recommendations",
+     "fix_stats",
+     "graph"
+    ],
+    "title": "OutcomeResponse"
+   },
+   "OwnerResponse": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "date": {
+      "type": "string",
+      "title": "Date"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     },
+     "valid_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid From"
+     },
+     "valid_to": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid To"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/OwnershipRecord"
+      },
+      "type": "array",
+      "title": "History"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "date",
+     "history"
+    ],
+    "title": "OwnerResponse"
+   },
+   "OwnershipRecord": {
+    "properties": {
+     "engineer": {
+      "type": "string",
+      "title": "Engineer"
+     },
+     "valid_from": {
+      "type": "string",
+      "title": "Valid From"
+     },
+     "valid_to": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid To"
+     }
+    },
+    "type": "object",
+    "required": [
+     "engineer",
+     "valid_from"
+    ],
+    "title": "OwnershipRecord"
+   },
+   "ReassignRequest": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "engineer": {
+      "type": "string",
+      "title": "Engineer"
+     },
+     "effective_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effective Date",
+      "description": "defaults to today"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "engineer"
+    ],
+    "title": "ReassignRequest"
+   },
+   "ReassignResponse": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "date": {
+      "type": "string",
+      "title": "Date"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     },
+     "valid_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid From"
+     },
+     "valid_to": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid To"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/OwnershipRecord"
+      },
+      "type": "array",
+      "title": "History"
+     },
+     "superseded": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/OwnershipRecord"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "date",
+     "history"
+    ],
+    "title": "ReassignResponse"
+   },
+   "Recommendation": {
+    "properties": {
+     "fix": {
+      "type": "string",
+      "title": "Fix"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     },
+     "attempts": {
+      "type": "integer",
+      "title": "Attempts"
+     },
+     "successes": {
+      "type": "integer",
+      "title": "Successes"
+     },
+     "rationale": {
+      "type": "string",
+      "title": "Rationale"
+     },
+     "avoid": {
+      "type": "boolean",
+      "title": "Avoid",
+      "default": false
+     },
+     "already_failed_here": {
+      "type": "boolean",
+      "title": "Already Failed Here",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "fix",
+     "score",
+     "attempts",
+     "successes",
+     "rationale"
+    ],
+    "title": "Recommendation"
+   },
+   "RiskItem": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "tier": {
+      "type": "string",
+      "title": "Tier"
+     },
+     "team": {
+      "type": "string",
+      "title": "Team"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     },
+     "direct_dependents": {
+      "type": "integer",
+      "title": "Direct Dependents"
+     },
+     "transitive_dependents": {
+      "type": "integer",
+      "title": "Transitive Dependents"
+     },
+     "incidents_originated": {
+      "type": "integer",
+      "title": "Incidents Originated"
+     },
+     "risk_score": {
+      "type": "number",
+      "title": "Risk Score",
+      "description": "transitive_dependents + 3 * incidents_originated(window)"
+     },
+     "rank": {
+      "type": "integer",
+      "title": "Rank"
+     },
+     "fan_in_rank": {
+      "type": "integer",
+      "title": "Fan In Rank"
+     },
+     "incident_rank": {
+      "type": "integer",
+      "title": "Incident Rank"
+     },
+     "insight": {
+      "type": "string",
+      "title": "Insight"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "tier",
+     "team",
+     "direct_dependents",
+     "transitive_dependents",
+     "incidents_originated",
+     "risk_score",
+     "rank",
+     "fan_in_rank",
+     "incident_rank",
+     "insight"
+    ],
+    "title": "RiskItem"
+   },
+   "RiskResponse": {
+    "properties": {
+     "as_of": {
+      "type": "string",
+      "title": "As Of"
+     },
+     "window_days": {
+      "type": "integer",
+      "title": "Window Days"
+     },
+     "incidents_in_window": {
+      "type": "integer",
+      "title": "Incidents In Window"
+     },
+     "services": {
+      "items": {
+       "$ref": "#/components/schemas/RiskItem"
+      },
+      "type": "array",
+      "title": "Services"
+     },
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload"
+     }
+    },
+    "type": "object",
+    "required": [
+     "as_of",
+     "window_days",
+     "incidents_in_window",
+     "services",
+     "graph"
+    ],
+    "title": "RiskResponse"
+   },
+   "SimilarIncident": {
+    "properties": {
+     "incident": {
+      "$ref": "#/components/schemas/IncidentSummary"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     },
+     "why": {
+      "type": "string",
+      "title": "Why"
+     },
+     "attempts": {
+      "items": {
+       "$ref": "#/components/schemas/AttemptSummary"
+      },
+      "type": "array",
+      "title": "Attempts",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "incident",
+     "score",
+     "why"
+    ],
+    "title": "SimilarIncident"
+   },
+   "Suspect": {
+    "properties": {
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "hops": {
+      "type": "integer",
+      "title": "Hops"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score",
+      "description": "3*has_recent_deploy + same_symptom_incidents + 1/(hops+1)"
+     },
+     "recent_deploys": {
+      "items": {
+       "$ref": "#/components/schemas/DeploySummary"
+      },
+      "type": "array",
+      "title": "Recent Deploys",
+      "default": []
+     },
+     "same_symptom_incidents": {
+      "type": "integer",
+      "title": "Same Symptom Incidents",
+      "default": 0
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
+     }
+    },
+    "type": "object",
+    "required": [
+     "service",
+     "hops",
+     "score"
+    ],
+    "title": "Suspect"
+   },
+   "TimelineEvent": {
+    "properties": {
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "deploy",
+       "incident_opened",
+       "attempt",
+       "resolved"
+      ],
+      "title": "Type"
+     },
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "node_ids": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Node Ids",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "ts",
+     "type",
+     "text"
+    ],
+    "title": "TimelineEvent"
+   },
+   "ToolCall": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "args": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Args",
+      "default": {}
+     },
+     "summary": {
+      "type": "string",
+      "title": "Summary",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "ToolCall"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "WipeRequest": {
+    "properties": {
+     "session_id": {
+      "type": "string",
+      "title": "Session Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "session_id"
+    ],
+    "title": "WipeRequest"
+   },
+   "WipeResponse": {
+    "properties": {
+     "session_id": {
+      "type": "string",
+      "title": "Session Id"
+     },
+     "wiped": {
+      "type": "boolean",
+      "title": "Wiped"
+     }
+    },
+    "type": "object",
+    "required": [
+     "session_id",
+     "wiped"
+    ],
+    "title": "WipeResponse"
+   }
+  }
+ }
+}

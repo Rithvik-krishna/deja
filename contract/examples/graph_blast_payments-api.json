@@ -203,9 +203,41 @@
   ],
   "edges": [
    {
-    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
-    "source": "svc:order-service",
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
     "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
+    "source": "svc:checkout",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
+    "source": "svc:web-frontend",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:checkout",
+    "source": "svc:mobile-bff",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
+    "source": "svc:loyalty",
+    "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
@@ -227,17 +259,17 @@
     "highlight": true
    },
    {
-    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
-    "source": "svc:subscriptions",
-    "target": "svc:payments-api",
+    "id": "svc:invoicing|DEPENDS_ON|svc:order-service",
+    "source": "svc:invoicing",
+    "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
    },
    {
-    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
-    "source": "svc:admin-portal",
-    "target": "svc:order-service",
+    "id": "svc:invoicing|DEPENDS_ON|svc:payments-api",
+    "source": "svc:invoicing",
+    "target": "svc:payments-api",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
@@ -251,56 +283,24 @@
     "highlight": true
    },
    {
-    "id": "svc:mobile-bff|DEPENDS_ON|svc:checkout",
-    "source": "svc:mobile-bff",
-    "target": "svc:checkout",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
-    "source": "svc:checkout",
+    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
+    "source": "svc:admin-portal",
     "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
    },
    {
-    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
-    "source": "svc:checkout",
+    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
+    "source": "svc:order-service",
     "target": "svc:payments-api",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
    },
    {
-    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
-    "source": "svc:web-frontend",
-    "target": "svc:checkout",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
-    "source": "svc:loyalty",
-    "target": "svc:order-service",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:invoicing|DEPENDS_ON|svc:order-service",
-    "source": "svc:invoicing",
-    "target": "svc:order-service",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:invoicing|DEPENDS_ON|svc:payments-api",
-    "source": "svc:invoicing",
+    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
+    "source": "svc:subscriptions",
     "target": "svc:payments-api",
     "type": "DEPENDS_ON",
     "props": {},

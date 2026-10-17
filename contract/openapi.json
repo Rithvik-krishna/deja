@@ -3,7 +3,7 @@
  "info": {
   "title": "Deja API",
   "description": "Incident copilot with institutional memory (Neo4j). Contract is frozen: see docs/API_CONTRACT.md",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
  "paths": {
   "/health": {
@@ -793,44 +793,19 @@
     "tags": [
      "insights"
     ],
-    "summary": "Evidence Shock",
-    "description": "Stress-test the incident diagnosis.\n\nReturns all candidate hypotheses with their evidence breakdown, then simulates\nremoving each piece of evidence and shows how suspect scores change.\nF(e) ranks which single observation is most critical to the current diagnosis.",
-    "operationId": "evidence_shock_insights_evidence_shock_post",
-    "parameters": [
-     {
-      "name": "incident_id",
-      "in": "query",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "title": "Incident Id"
+    "summary": "Stress-test incident diagnosis via counterfactual evidence perturbation",
+    "description": "Simulates removal of evidence items or entire evidence source channels. Calculates before/after scores, margin, and verdict (robust | fragile | inconclusive) using tie epsilon 0.25 without arbitrary tie-breaking. All scores are heuristic, not a probability.",
+    "operationId": "post_evidence_shock_insights_evidence_shock_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EvidenceShockRequest"
+       }
       }
      },
-     {
-      "name": "service",
-      "in": "query",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "title": "Service"
-      }
-     },
-     {
-      "name": "symptom",
-      "in": "query",
-      "required": true,
-      "schema": {
-       "enum": [
-        "latency",
-        "timeout",
-        "5xx",
-        "oom"
-       ],
-       "type": "string",
-       "title": "Symptom"
-      }
-     }
-    ],
+     "required": true
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
@@ -860,9 +835,9 @@
     "tags": [
      "insights"
     ],
-    "summary": "Hypotheses",
-    "description": "Return ranked hypotheses with evidence breakdown for an existing incident.\n\nDoes not require re-specifying service/symptom \u2014 derives them from the incident record.",
-    "operationId": "hypotheses_insights_hypotheses__incident_id__get",
+    "summary": "Retrieve ranked candidate hypotheses and supporting evidence items for an incident",
+    "description": "Returns candidates with upstream hops, scores, and deterministic evidence items. All scores are heuristic, not a probability.",
+    "operationId": "get_hypotheses_insights_hypotheses__incident_id__get",
     "parameters": [
      {
       "name": "incident_id",
@@ -1310,6 +1285,69 @@
     ],
     "title": "ChatResponse"
    },
+   "CriticalEvidenceItem": {
+    "properties": {
+     "evidence_id": {
+      "type": "string",
+      "title": "Evidence Id"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "owner_service": {
+      "type": "string",
+      "title": "Owner Service"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "impact_score": {
+      "type": "number",
+      "title": "Impact Score",
+      "description": "F(e) impact score: \u03a3 importance(h) * |\u0394score| (heuristic, not a probability)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "evidence_id",
+     "kind",
+     "source",
+     "owner_service",
+     "label",
+     "impact_score"
+    ],
+    "title": "CriticalEvidenceItem"
+   },
+   "CriticalSourceItem": {
+    "properties": {
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "impact_score": {
+      "type": "number",
+      "title": "Impact Score",
+      "description": "Total impact of this evidence source (heuristic, not a probability)"
+     },
+     "evidence_count": {
+      "type": "integer",
+      "title": "Evidence Count"
+     }
+    },
+    "type": "object",
+    "required": [
+     "source",
+     "impact_score",
+     "evidence_count"
+    ],
+    "title": "CriticalSourceItem"
+   },
    "DemoResetResponse": {
     "properties": {
      "ok": {
@@ -1366,46 +1404,145 @@
    },
    "EvidenceItem": {
     "properties": {
-     "evidence_id": {
+     "id": {
       "type": "string",
-      "title": "Evidence Id",
-      "description": "Unique id, e.g. 'deploy:DEP-012' or 'history:payments-api:latency'"
+      "title": "Id",
+      "description": "Deterministic ID, e.g. 'ev:deploy:<svc>', 'ev:history:<inc>', 'ev:topology:<svc>'"
      },
-     "evidence_type": {
+     "kind": {
       "type": "string",
-      "title": "Evidence Type",
-      "description": "RECENT_DEPLOY | SAME_SYMPTOM | PROXIMITY"
+      "enum": [
+       "deploy",
+       "history",
+       "topology"
+      ],
+      "title": "Kind",
+      "description": "Kind of evidence: deploy | history | topology"
      },
-     "description": {
+     "source": {
       "type": "string",
-      "title": "Description"
+      "enum": [
+       "cicd-deploy-log",
+       "incident-history",
+       "service-topology"
+      ],
+      "title": "Source",
+      "description": "Source system: cicd-deploy-log | incident-history | service-topology"
      },
      "weight": {
       "type": "number",
       "title": "Weight",
-      "description": "Contribution to the suspect's score"
+      "description": "Evidence weight contribution (heuristic, not a probability)"
      },
-     "source": {
+     "owner_service": {
       "type": "string",
-      "title": "Source",
-      "description": "Human-readable provenance"
+      "title": "Owner Service",
+      "description": "Candidate service this evidence attaches to"
      },
-     "suspect": {
+     "label": {
       "type": "string",
-      "title": "Suspect",
-      "description": "Service this evidence supports"
+      "title": "Label",
+      "description": "Human-readable description of the evidence"
+     },
+     "node_ids": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Node Ids",
+      "description": "IDs of graph nodes representing this evidence"
+     },
+     "removed": {
+      "type": "boolean",
+      "title": "Removed",
+      "description": "Whether this evidence was perturbed/removed in this scenario",
+      "default": false
      }
     },
     "type": "object",
     "required": [
-     "evidence_id",
-     "evidence_type",
-     "description",
-     "weight",
+     "id",
+     "kind",
      "source",
-     "suspect"
+     "weight",
+     "owner_service",
+     "label"
     ],
     "title": "EvidenceItem"
+   },
+   "EvidenceShockRequest": {
+    "properties": {
+     "incident_id": {
+      "type": "string",
+      "title": "Incident Id",
+      "description": "Incident ID to stress-test"
+     },
+     "remove_evidence_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remove Evidence Ids",
+      "description": "Specific evidence IDs to perturb/remove"
+     },
+     "remove_sources": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remove Sources",
+      "description": "Evidence source channels to perturb/remove (e.g. 'incident-history', 'cicd-deploy-log')"
+     },
+     "service": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Service",
+      "description": "Optional service to validate against incident"
+     },
+     "symptom": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "latency",
+         "timeout",
+         "5xx",
+         "oom"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Symptom",
+      "description": "Optional symptom to validate against incident"
+     }
+    },
+    "type": "object",
+    "required": [
+     "incident_id"
+    ],
+    "title": "EvidenceShockRequest"
    },
    "EvidenceShockResponse": {
     "properties": {
@@ -1419,47 +1556,76 @@
      },
      "symptom": {
       "type": "string",
+      "enum": [
+       "latency",
+       "timeout",
+       "5xx",
+       "oom"
+      ],
       "title": "Symptom"
+     },
+     "verdict": {
+      "type": "string",
+      "enum": [
+       "robust",
+       "fragile",
+       "inconclusive"
+      ],
+      "title": "Verdict",
+      "description": "Verdict: robust (top suspect holds), fragile (top suspect flips), or inconclusive (tie within epsilon 0.25)"
+     },
+     "margin_before": {
+      "type": "number",
+      "title": "Margin Before",
+      "description": "Score difference between #1 and #2 before perturbation (heuristic, not a probability)"
+     },
+     "margin_after": {
+      "type": "number",
+      "title": "Margin After",
+      "description": "Score difference between #1 and #2 after perturbation (heuristic, not a probability)"
+     },
+     "top_suspect_before": {
+      "type": "string",
+      "title": "Top Suspect Before",
+      "description": "Leading hypothesis before perturbation"
+     },
+     "top_suspect_after": {
+      "type": "string",
+      "title": "Top Suspect After",
+      "description": "Leading hypothesis after perturbation"
      },
      "hypotheses": {
       "items": {
        "$ref": "#/components/schemas/HypothesisItem"
       },
       "type": "array",
-      "title": "Hypotheses"
-     },
-     "scenarios": {
-      "items": {
-       "$ref": "#/components/schemas/ShockScenarioResult"
-      },
-      "type": "array",
-      "title": "Scenarios"
+      "title": "Hypotheses",
+      "description": "Ranked candidate hypotheses with before/after scores"
      },
      "critical_evidence": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Critical Evidence"
+      "items": {
+       "$ref": "#/components/schemas/CriticalEvidenceItem"
+      },
+      "type": "array",
+      "title": "Critical Evidence",
+      "description": "Top 5 evidence items by F(e) impact score (heuristic, not a probability)"
      },
-     "diagnosis_robust": {
-      "type": "boolean",
-      "title": "Diagnosis Robust"
+     "critical_sources": {
+      "items": {
+       "$ref": "#/components/schemas/CriticalSourceItem"
+      },
+      "type": "array",
+      "title": "Critical Sources",
+      "description": "Evidence sources ranked by aggregate impact (heuristic, not a probability)"
      },
-     "robustness_note": {
+     "recommendation": {
       "type": "string",
-      "title": "Robustness Note"
+      "title": "Recommendation",
+      "description": "Actionable diagnostic or remediation recommendation based on stress-test"
      },
      "graph": {
       "$ref": "#/components/schemas/GraphPayload",
-      "default": {
-       "nodes": [],
-       "edges": []
-      }
+      "description": "Graph visualization payload with Evidence nodes and SUPPORTS edges"
      }
     },
     "type": "object",
@@ -1467,10 +1633,13 @@
      "incident_id",
      "service",
      "symptom",
+     "verdict",
+     "margin_before",
+     "margin_after",
+     "top_suspect_before",
+     "top_suspect_after",
      "hypotheses",
-     "scenarios",
-     "diagnosis_robust",
-     "robustness_note"
+     "recommendation"
     ],
     "title": "EvidenceShockResponse"
    },
@@ -1667,19 +1836,23 @@
     "properties": {
      "service": {
       "type": "string",
-      "title": "Service"
+      "title": "Service",
+      "description": "Candidate root-cause service"
      },
      "hops": {
       "type": "integer",
-      "title": "Hops"
+      "title": "Hops",
+      "description": "Upstream hops from alerting service"
      },
      "score": {
       "type": "number",
-      "title": "Score"
+      "title": "Score",
+      "description": "Suspect score (heuristic, not a probability)"
      },
      "rank": {
       "type": "integer",
-      "title": "Rank"
+      "title": "Rank",
+      "description": "Rank among hypotheses (1-indexed)"
      },
      "owner": {
       "anyOf": [
@@ -1690,7 +1863,8 @@
         "type": "null"
        }
       ],
-      "title": "Owner"
+      "title": "Owner",
+      "description": "Current owner of this service"
      },
      "evidence": {
       "items": {
@@ -1698,13 +1872,55 @@
       },
       "type": "array",
       "title": "Evidence",
-      "default": []
+      "description": "Evidence items supporting this suspect"
      },
-     "shock_sensitivity": {
-      "type": "number",
-      "title": "Shock Sensitivity",
-      "description": "Sum of F(e) across evidence items for this suspect",
-      "default": 0.0
+     "score_before": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score Before",
+      "description": "Score before perturbation (heuristic, not a probability)"
+     },
+     "score_after": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Score After",
+      "description": "Score after perturbation (heuristic, not a probability)"
+     },
+     "rank_before": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rank Before",
+      "description": "Rank before perturbation"
+     },
+     "rank_after": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rank After",
+      "description": "Rank after perturbation"
      }
     },
     "type": "object",
@@ -1722,33 +1938,38 @@
       "type": "string",
       "title": "Incident Id"
      },
+     "service": {
+      "type": "string",
+      "title": "Service"
+     },
+     "symptom": {
+      "type": "string",
+      "enum": [
+       "latency",
+       "timeout",
+       "5xx",
+       "oom"
+      ],
+      "title": "Symptom"
+     },
      "hypotheses": {
       "items": {
        "$ref": "#/components/schemas/HypothesisItem"
       },
       "type": "array",
-      "title": "Hypotheses"
+      "title": "Hypotheses",
+      "description": "Ranked candidate hypotheses with their supporting evidence items"
      },
-     "diagnosis_robust": {
-      "anyOf": [
-       {
-        "type": "boolean"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Diagnosis Robust"
-     },
-     "robustness_note": {
-      "type": "string",
-      "title": "Robustness Note",
-      "default": ""
+     "graph": {
+      "$ref": "#/components/schemas/GraphPayload",
+      "description": "Graph visualization payload with Evidence nodes and SUPPORTS edges"
      }
     },
     "type": "object",
     "required": [
      "incident_id",
+     "service",
+     "symptom",
      "hypotheses"
     ],
     "title": "HypothesisResponse"
@@ -2347,65 +2568,6 @@
      "graph"
     ],
     "title": "RiskResponse"
-   },
-   "ShockScenarioResult": {
-    "properties": {
-     "evidence_id": {
-      "type": "string",
-      "title": "Evidence Id"
-     },
-     "evidence_type": {
-      "type": "string",
-      "title": "Evidence Type"
-     },
-     "description": {
-      "type": "string",
-      "title": "Description"
-     },
-     "impact_score": {
-      "type": "number",
-      "title": "Impact Score",
-      "description": "F(e) = \u03a3 importance(h) \u00d7 |score_drop(h,e)|"
-     },
-     "top_suspect_before": {
-      "type": "string",
-      "title": "Top Suspect Before"
-     },
-     "top_suspect_after": {
-      "type": "string",
-      "title": "Top Suspect After"
-     },
-     "diagnosis_changed": {
-      "type": "boolean",
-      "title": "Diagnosis Changed"
-     },
-     "is_critical": {
-      "type": "boolean",
-      "title": "Is Critical"
-     },
-     "suspect_deltas": {
-      "items": {
-       "additionalProperties": true,
-       "type": "object"
-      },
-      "type": "array",
-      "title": "Suspect Deltas",
-      "description": "[{service, score_before, score_after, delta}] sorted by score_after desc"
-     }
-    },
-    "type": "object",
-    "required": [
-     "evidence_id",
-     "evidence_type",
-     "description",
-     "impact_score",
-     "top_suspect_before",
-     "top_suspect_after",
-     "diagnosis_changed",
-     "is_critical",
-     "suspect_deltas"
-    ],
-    "title": "ShockScenarioResult"
    },
    "SimilarIncident": {
     "properties": {

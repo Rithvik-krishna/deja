@@ -263,6 +263,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/insights/evidence-shock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stress-test incident diagnosis via counterfactual evidence perturbation
+         * @description Simulates removal of evidence items or entire evidence source channels. Calculates before/after scores, margin, and verdict (robust | fragile | inconclusive) using tie epsilon 0.25 without arbitrary tie-breaking. All scores are heuristic, not a probability.
+         */
+        post: operations["post_evidence_shock_insights_evidence_shock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/insights/hypotheses/{incident_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve ranked candidate hypotheses and supporting evidence items for an incident
+         * @description Returns candidates with upstream hops, scores, and deterministic evidence items. All scores are heuristic, not a probability.
+         */
+        get: operations["get_hypotheses_insights_hypotheses__incident_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -420,6 +460,36 @@ export interface components {
             recalled: string[];
             graph?: components["schemas"]["GraphPayload"] | null;
         };
+        /** CriticalEvidenceItem */
+        CriticalEvidenceItem: {
+            /** Evidence Id */
+            evidence_id: string;
+            /** Kind */
+            kind: string;
+            /** Source */
+            source: string;
+            /** Owner Service */
+            owner_service: string;
+            /** Label */
+            label: string;
+            /**
+             * Impact Score
+             * @description F(e) impact score: Σ importance(h) * |Δscore| (heuristic, not a probability)
+             */
+            impact_score: number;
+        };
+        /** CriticalSourceItem */
+        CriticalSourceItem: {
+            /** Source */
+            source: string;
+            /**
+             * Impact Score
+             * @description Total impact of this evidence source (heuristic, not a probability)
+             */
+            impact_score: number;
+            /** Evidence Count */
+            evidence_count: number;
+        };
         /** DemoResetResponse */
         DemoResetResponse: {
             /** Ok */
@@ -441,6 +511,140 @@ export interface components {
             deployed_at: string;
             /** Author */
             author: string;
+        };
+        /** EvidenceItem */
+        EvidenceItem: {
+            /**
+             * Id
+             * @description Deterministic ID, e.g. 'ev:deploy:<svc>', 'ev:history:<inc>', 'ev:topology:<svc>'
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Kind of evidence: deploy | history | topology
+             * @enum {string}
+             */
+            kind: "deploy" | "history" | "topology";
+            /**
+             * Source
+             * @description Source system: cicd-deploy-log | incident-history | service-topology
+             * @enum {string}
+             */
+            source: "cicd-deploy-log" | "incident-history" | "service-topology";
+            /**
+             * Weight
+             * @description Evidence weight contribution (heuristic, not a probability)
+             */
+            weight: number;
+            /**
+             * Owner Service
+             * @description Candidate service this evidence attaches to
+             */
+            owner_service: string;
+            /**
+             * Label
+             * @description Human-readable description of the evidence
+             */
+            label: string;
+            /**
+             * Node Ids
+             * @description IDs of graph nodes representing this evidence
+             */
+            node_ids?: string[];
+            /**
+             * Removed
+             * @description Whether this evidence was perturbed/removed in this scenario
+             * @default false
+             */
+            removed: boolean;
+        };
+        /** EvidenceShockRequest */
+        EvidenceShockRequest: {
+            /**
+             * Incident Id
+             * @description Incident ID to stress-test
+             */
+            incident_id: string;
+            /**
+             * Remove Evidence Ids
+             * @description Specific evidence IDs to perturb/remove
+             */
+            remove_evidence_ids?: string[] | null;
+            /**
+             * Remove Sources
+             * @description Evidence source channels to perturb/remove (e.g. 'incident-history', 'cicd-deploy-log')
+             */
+            remove_sources?: string[] | null;
+            /**
+             * Service
+             * @description Optional service to validate against incident
+             */
+            service?: string | null;
+            /**
+             * Symptom
+             * @description Optional symptom to validate against incident
+             */
+            symptom?: ("latency" | "timeout" | "5xx" | "oom") | null;
+        };
+        /** EvidenceShockResponse */
+        EvidenceShockResponse: {
+            /** Incident Id */
+            incident_id: string;
+            /** Service */
+            service: string;
+            /**
+             * Symptom
+             * @enum {string}
+             */
+            symptom: "latency" | "timeout" | "5xx" | "oom";
+            /**
+             * Verdict
+             * @description Verdict: robust (top suspect holds), fragile (top suspect flips), or inconclusive (tie within epsilon 0.25)
+             * @enum {string}
+             */
+            verdict: "robust" | "fragile" | "inconclusive";
+            /**
+             * Margin Before
+             * @description Score difference between #1 and #2 before perturbation (heuristic, not a probability)
+             */
+            margin_before: number;
+            /**
+             * Margin After
+             * @description Score difference between #1 and #2 after perturbation (heuristic, not a probability)
+             */
+            margin_after: number;
+            /**
+             * Top Suspect Before
+             * @description Leading hypothesis before perturbation
+             */
+            top_suspect_before: string;
+            /**
+             * Top Suspect After
+             * @description Leading hypothesis after perturbation
+             */
+            top_suspect_after: string;
+            /**
+             * Hypotheses
+             * @description Ranked candidate hypotheses with before/after scores
+             */
+            hypotheses: components["schemas"]["HypothesisItem"][];
+            /**
+             * Critical Evidence
+             * @description Top 5 evidence items by F(e) impact score (heuristic, not a probability)
+             */
+            critical_evidence?: components["schemas"]["CriticalEvidenceItem"][];
+            /**
+             * Critical Sources
+             * @description Evidence sources ranked by aggregate impact (heuristic, not a probability)
+             */
+            critical_sources?: components["schemas"]["CriticalSourceItem"][];
+            /**
+             * Recommendation
+             * @description Actionable diagnostic or remediation recommendation based on stress-test
+             */
+            recommendation: string;
+            /** @description Graph visualization payload with Evidence nodes and SUPPORTS edges */
+            graph?: components["schemas"]["GraphPayload"];
         };
         /** FixStat */
         FixStat: {
@@ -543,6 +747,78 @@ export interface components {
             mode: string;
             /** Neo4J */
             neo4j: boolean;
+        };
+        /** HypothesisItem */
+        HypothesisItem: {
+            /**
+             * Service
+             * @description Candidate root-cause service
+             */
+            service: string;
+            /**
+             * Hops
+             * @description Upstream hops from alerting service
+             */
+            hops: number;
+            /**
+             * Score
+             * @description Suspect score (heuristic, not a probability)
+             */
+            score: number;
+            /**
+             * Rank
+             * @description Rank among hypotheses (1-indexed)
+             */
+            rank: number;
+            /**
+             * Owner
+             * @description Current owner of this service
+             */
+            owner?: string | null;
+            /**
+             * Evidence
+             * @description Evidence items supporting this suspect
+             */
+            evidence?: components["schemas"]["EvidenceItem"][];
+            /**
+             * Score Before
+             * @description Score before perturbation (heuristic, not a probability)
+             */
+            score_before?: number | null;
+            /**
+             * Score After
+             * @description Score after perturbation (heuristic, not a probability)
+             */
+            score_after?: number | null;
+            /**
+             * Rank Before
+             * @description Rank before perturbation
+             */
+            rank_before?: number | null;
+            /**
+             * Rank After
+             * @description Rank after perturbation
+             */
+            rank_after?: number | null;
+        };
+        /** HypothesisResponse */
+        HypothesisResponse: {
+            /** Incident Id */
+            incident_id: string;
+            /** Service */
+            service: string;
+            /**
+             * Symptom
+             * @enum {string}
+             */
+            symptom: "latency" | "timeout" | "5xx" | "oom";
+            /**
+             * Hypotheses
+             * @description Ranked candidate hypotheses with their supporting evidence items
+             */
+            hypotheses: components["schemas"]["HypothesisItem"][];
+            /** @description Graph visualization payload with Evidence nodes and SUPPORTS edges */
+            graph?: components["schemas"]["GraphPayload"];
         };
         /** IncidentDetail */
         IncidentDetail: {
@@ -1353,6 +1629,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WipeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_evidence_shock_insights_evidence_shock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceShockRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceShockResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_hypotheses_insights_hypotheses__incident_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HypothesisResponse"];
                 };
             };
             /** @description Validation Error */

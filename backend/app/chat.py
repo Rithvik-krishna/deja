@@ -134,49 +134,6 @@ def handle_chat(engine: Engine, req: ChatRequest) -> ChatResponse:
         return resp(f"Yes - this is {iid} ({d.title}). Already tried: {', '.join(failed) or 'nothing yet'}.{tail}",
                     "recall", recalled=facts, graph=d.graph)
 
-    # 6) evidence shock: "stress test diagnosis" / "what if deploy is wrong" / "challenge diagnosis"
-    SHOCK_RE = re.compile(
-        r"stress.?test|shock|challenge.{0,20}diagn|what if.{0,30}wrong|fragile|critical.{0,20}evidence|"
-        r"remove.{0,20}evidence|what.{0,20}changes|alternative.{0,20}hypothes",
-        re.I,
-    )
-    if SHOCK_RE.search(msg):
-        iid, recalled = _open_incident(engine, sess)
-        if not iid:
-            return resp(
-                "No open incident to analyse. Tell me which service is alerting first.",
-                "no_incident",
-            )
-        sess["incident_id"] = iid
-        inc = engine.incident(iid)
-        affected_svc = inc.impacted[0] if inc.impacted else inc.origin
-        r = engine.evidence_shock(iid, affected_svc, inc.symptom)
-        calls.append(ToolCall(
-            name="evidence_shock",
-            args={"incident_id": iid, "service": affected_svc, "symptom": inc.symptom},
-            summary=f"robust={r.diagnosis_robust}; critical={r.critical_evidence}",
-        ))
-        top_h = r.hypotheses[0] if r.hypotheses else None
-        top_name = top_h.service if top_h else "unknown"
-        crit = r.critical_evidence or "none identified"
-        changed = [sc for sc in r.scenarios if sc.diagnosis_changed]
-        if r.diagnosis_robust:
-            reply = (
-                f"Diagnosis stress-test complete. {top_name} remains the top suspect "
-                f"even after removing any single piece of evidence — diagnosis is ROBUST. "
-                f"Most critical evidence: {crit} (removing it causes the biggest score drop but doesn't flip the result)."
-            )
-        else:
-            alts = list({sc.top_suspect_after for sc in changed})
-            reply = (
-                f"⚠️ Diagnosis is FRAGILE. Removing {len(changed)} evidence item(s) changes the #1 suspect. "
-                f"Current top: {top_name}. Alternative(s) if critical evidence is unreliable: {', '.join(alts)}. "
-                f"Most critical evidence: {crit}. Verify this observation before acting. {r.robustness_note}"
-            )
-        recalled_facts = [f"Hypothesis #{h.rank}: {h.service} (score {h.score}, {len(h.evidence)} evidence items)"
-                          for h in r.hypotheses[:4]]
-        return resp(reply, "evidence_shock", graph=r.graph, recalled=recalled_facts)
-
     return resp("I can: open an incident (e.g. 'checkout latency is spiking'), log an outcome ('restarted, still failing'), "
                 "recall an open incident ('it's back'), or answer ownership questions ('who owned payments-api in July?').", "help")
 
