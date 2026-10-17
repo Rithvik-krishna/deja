@@ -388,13 +388,17 @@ export default function ShockViz({ shock, onSelectSource }: ShockVizProps): JSX.
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {shock.critical_sources.map((src) => {
-              // Expected outcome hint
-              const expectedText =
-                src.source === "incident-history"
-                  ? "Flips to Inconclusive (tie at 3.5)"
-                  : src.source === "cicd-deploy-log"
-                  ? "Stays Robust (payments-api #1)"
-                  : "Topology invariant";
+              const sourceEvidence = shock.hypotheses.flatMap((h) =>
+                (h.evidence || []).filter((e) => e.source === src.source)
+              );
+              const uniqueSourceItems = Array.from(new Map(sourceEvidence.map((e) => [e.id, e])).values());
+              const removedFromSource = uniqueSourceItems.filter((e) => e.removed);
+              const isPerturbed = removedFromSource.length > 0;
+              const totalWeight = uniqueSourceItems.reduce((acc, e) => acc + (e.weight || 0), 0);
+
+              const statusText = isPerturbed
+                ? `${removedFromSource.length} perturbed → ${shock.verdict.toUpperCase()}`
+                : `${src.evidence_count} item${src.evidence_count === 1 ? "" : "s"} (${totalWeight.toFixed(1)} pts) • Click to shock`;
 
               return (
                 <button
@@ -403,8 +407,8 @@ export default function ShockViz({ shock, onSelectSource }: ShockVizProps): JSX.
                   style={{
                     padding: "6px 12px",
                     borderRadius: 6,
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #334155",
+                    backgroundColor: isPerturbed ? verdictConfig.bg : "#1e293b",
+                    border: `1px solid ${isPerturbed ? verdictConfig.border : "#334155"}`,
                     color: "#f8fafc",
                     cursor: "pointer",
                     textAlign: "left",
@@ -414,12 +418,12 @@ export default function ShockViz({ shock, onSelectSource }: ShockVizProps): JSX.
                     transition: "all 0.15s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#38bdf8";
-                    e.currentTarget.style.backgroundColor = "#24324a";
+                    e.currentTarget.style.borderColor = isPerturbed ? verdictConfig.border : "#38bdf8";
+                    e.currentTarget.style.backgroundColor = isPerturbed ? verdictConfig.bg : "#24324a";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#334155";
-                    e.currentTarget.style.backgroundColor = "#1e293b";
+                    e.currentTarget.style.borderColor = isPerturbed ? verdictConfig.border : "#334155";
+                    e.currentTarget.style.backgroundColor = isPerturbed ? verdictConfig.bg : "#1e293b";
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -436,8 +440,24 @@ export default function ShockViz({ shock, onSelectSource }: ShockVizProps): JSX.
                     >
                       F: {src.impact_score.toFixed(2)}
                     </span>
+                    {isPerturbed && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          padding: "1px 4px",
+                          borderRadius: 3,
+                          backgroundColor: verdictConfig.color,
+                          color: "#090d16",
+                          fontWeight: 700,
+                        }}
+                      >
+                        SHOCKED
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: 9, color: "#94a3b8" }}>{expectedText}</div>
+                  <div style={{ fontSize: 9, color: isPerturbed ? verdictConfig.color : "#94a3b8" }}>
+                    {statusText}
+                  </div>
                 </button>
               );
             })}
