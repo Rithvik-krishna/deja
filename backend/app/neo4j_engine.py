@@ -101,6 +101,8 @@ class Neo4jEngine(WriteMixin, Engine):
         self.driver = GraphDatabase.driver(
             config.NEO4J_URI,
             auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD),
+            max_connection_lifetime=30 * 60,
+            liveness_check_timeout=1,
         )
         self.db = config.NEO4J_DATABASE
 
