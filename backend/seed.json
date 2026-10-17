@@ -1,0 +1,2247 @@
+{
+ "meta": {
+  "as_of": "2026-10-16",
+  "generated_by": "scripts/generate_seed.py",
+  "counts": {
+   "services": 22,
+   "engineers": 10,
+   "fixes": 8,
+   "dependencies": 45,
+   "ownership": 24,
+   "deploys": 36,
+   "incidents": 44,
+   "similar": 9,
+   "attempts": 67
+  }
+ },
+ "services": [
+  {
+   "id": "web-frontend",
+   "name": "web-frontend",
+   "tier": "tier-1",
+   "team": "commerce",
+   "description": "Customer web app"
+  },
+  {
+   "id": "mobile-bff",
+   "name": "mobile-bff",
+   "tier": "tier-1",
+   "team": "commerce",
+   "description": "Backend-for-frontend for mobile apps"
+  },
+  {
+   "id": "checkout",
+   "name": "checkout",
+   "tier": "tier-1",
+   "team": "commerce",
+   "description": "Checkout orchestration"
+  },
+  {
+   "id": "cart",
+   "name": "cart",
+   "tier": "tier-1",
+   "team": "commerce",
+   "description": "Shopping cart"
+  },
+  {
+   "id": "order-service",
+   "name": "order-service",
+   "tier": "tier-1",
+   "team": "commerce",
+   "description": "Order lifecycle"
+  },
+  {
+   "id": "auth-service",
+   "name": "auth-service",
+   "tier": "tier-1",
+   "team": "identity",
+   "description": "Authentication and tokens"
+  },
+  {
+   "id": "search",
+   "name": "search",
+   "tier": "tier-2",
+   "team": "discovery",
+   "description": "Product search"
+  },
+  {
+   "id": "recommendations",
+   "name": "recommendations",
+   "tier": "tier-2",
+   "team": "discovery",
+   "description": "Personalised recommendations"
+  },
+  {
+   "id": "inventory",
+   "name": "inventory",
+   "tier": "tier-2",
+   "team": "supply",
+   "description": "Stock levels and reservations"
+  },
+  {
+   "id": "payments-api",
+   "name": "payments-api",
+   "tier": "tier-2",
+   "team": "payments-platform",
+   "description": "Payment authorisation and capture"
+  },
+  {
+   "id": "fraud-check",
+   "name": "fraud-check",
+   "tier": "tier-2",
+   "team": "platform",
+   "description": "Real-time fraud scoring"
+  },
+  {
+   "id": "user-profile",
+   "name": "user-profile",
+   "tier": "tier-2",
+   "team": "identity",
+   "description": "User profile store"
+  },
+  {
+   "id": "refunds",
+   "name": "refunds",
+   "tier": "tier-2",
+   "team": "payments-platform",
+   "description": "Refund processing"
+  },
+  {
+   "id": "subscriptions",
+   "name": "subscriptions",
+   "tier": "tier-2",
+   "team": "growth",
+   "description": "Recurring billing"
+  },
+  {
+   "id": "redis-cache",
+   "name": "redis-cache",
+   "tier": "tier-2",
+   "team": "infra",
+   "description": "Shared Redis cache"
+  },
+  {
+   "id": "kafka-bus",
+   "name": "kafka-bus",
+   "tier": "tier-2",
+   "team": "infra",
+   "description": "Event bus"
+  },
+  {
+   "id": "notifications",
+   "name": "notifications",
+   "tier": "tier-3",
+   "team": "growth",
+   "description": "Email/SMS/push"
+  },
+  {
+   "id": "shipping-quotes",
+   "name": "shipping-quotes",
+   "tier": "tier-3",
+   "team": "commerce",
+   "description": "Carrier rate quotes"
+  },
+  {
+   "id": "invoicing",
+   "name": "invoicing",
+   "tier": "tier-3",
+   "team": "payments-platform",
+   "description": "Invoice generation"
+  },
+  {
+   "id": "loyalty",
+   "name": "loyalty",
+   "tier": "tier-3",
+   "team": "growth",
+   "description": "Loyalty points"
+  },
+  {
+   "id": "feature-flags",
+   "name": "feature-flags",
+   "tier": "tier-3",
+   "team": "platform",
+   "description": "Feature flag service"
+  },
+  {
+   "id": "admin-portal",
+   "name": "admin-portal",
+   "tier": "tier-3",
+   "team": "platform",
+   "description": "Internal admin UI"
+  }
+ ],
+ "engineers": [
+  {
+   "id": "asha-menon",
+   "name": "Asha Menon",
+   "team": "payments-platform"
+  },
+  {
+   "id": "dev-patel",
+   "name": "Dev Patel",
+   "team": "payments-platform"
+  },
+  {
+   "id": "ravi-iyer",
+   "name": "Ravi Iyer",
+   "team": "platform"
+  },
+  {
+   "id": "kiran-rao",
+   "name": "Kiran Rao",
+   "team": "supply"
+  },
+  {
+   "id": "meera-nair",
+   "name": "Meera Nair",
+   "team": "discovery"
+  },
+  {
+   "id": "sana-khan",
+   "name": "Sana Khan",
+   "team": "commerce"
+  },
+  {
+   "id": "arjun-reddy",
+   "name": "Arjun Reddy",
+   "team": "commerce"
+  },
+  {
+   "id": "lakshmi-pillai",
+   "name": "Lakshmi Pillai",
+   "team": "identity"
+  },
+  {
+   "id": "vikram-singh",
+   "name": "Vikram Singh",
+   "team": "infra"
+  },
+  {
+   "id": "tara-bose",
+   "name": "Tara Bose",
+   "team": "growth"
+  }
+ ],
+ "fixes": [
+  {
+   "id": "restart-pods",
+   "name": "restart-pods",
+   "description": "Restart affected pods/instances",
+   "category": "restart"
+  },
+  {
+   "id": "rollback-deploy",
+   "name": "rollback-deploy",
+   "description": "Roll back to the previous release",
+   "category": "rollback"
+  },
+  {
+   "id": "scale-up-replicas",
+   "name": "scale-up-replicas",
+   "description": "Scale up replicas / capacity",
+   "category": "scale"
+  },
+  {
+   "id": "increase-conn-pool",
+   "name": "increase-conn-pool",
+   "description": "Increase DB / connection pool limits",
+   "category": "config"
+  },
+  {
+   "id": "flush-cache",
+   "name": "flush-cache",
+   "description": "Flush and rebuild the cache",
+   "category": "cache"
+  },
+  {
+   "id": "toggle-feature-flag",
+   "name": "toggle-feature-flag",
+   "description": "Disable the feature flag tied to the change",
+   "category": "config"
+  },
+  {
+   "id": "failover-db-replica",
+   "name": "failover-db-replica",
+   "description": "Fail over to the replica",
+   "category": "failover"
+  },
+  {
+   "id": "rotate-credentials",
+   "name": "rotate-credentials",
+   "description": "Rotate expired credentials/tokens",
+   "category": "security"
+  }
+ ],
+ "dependencies": [
+  {
+   "from": "web-frontend",
+   "to": "checkout"
+  },
+  {
+   "from": "web-frontend",
+   "to": "cart"
+  },
+  {
+   "from": "web-frontend",
+   "to": "search"
+  },
+  {
+   "from": "web-frontend",
+   "to": "auth-service"
+  },
+  {
+   "from": "web-frontend",
+   "to": "recommendations"
+  },
+  {
+   "from": "mobile-bff",
+   "to": "checkout"
+  },
+  {
+   "from": "mobile-bff",
+   "to": "cart"
+  },
+  {
+   "from": "mobile-bff",
+   "to": "search"
+  },
+  {
+   "from": "mobile-bff",
+   "to": "auth-service"
+  },
+  {
+   "from": "mobile-bff",
+   "to": "user-profile"
+  },
+  {
+   "from": "admin-portal",
+   "to": "refunds"
+  },
+  {
+   "from": "admin-portal",
+   "to": "auth-service"
+  },
+  {
+   "from": "admin-portal",
+   "to": "order-service"
+  },
+  {
+   "from": "checkout",
+   "to": "payments-api"
+  },
+  {
+   "from": "checkout",
+   "to": "cart"
+  },
+  {
+   "from": "checkout",
+   "to": "inventory"
+  },
+  {
+   "from": "checkout",
+   "to": "order-service"
+  },
+  {
+   "from": "checkout",
+   "to": "shipping-quotes"
+  },
+  {
+   "from": "checkout",
+   "to": "feature-flags"
+  },
+  {
+   "from": "cart",
+   "to": "inventory"
+  },
+  {
+   "from": "cart",
+   "to": "redis-cache"
+  },
+  {
+   "from": "cart",
+   "to": "feature-flags"
+  },
+  {
+   "from": "order-service",
+   "to": "payments-api"
+  },
+  {
+   "from": "order-service",
+   "to": "inventory"
+  },
+  {
+   "from": "order-service",
+   "to": "kafka-bus"
+  },
+  {
+   "from": "refunds",
+   "to": "payments-api"
+  },
+  {
+   "from": "refunds",
+   "to": "order-service"
+  },
+  {
+   "from": "subscriptions",
+   "to": "payments-api"
+  },
+  {
+   "from": "subscriptions",
+   "to": "user-profile"
+  },
+  {
+   "from": "subscriptions",
+   "to": "kafka-bus"
+  },
+  {
+   "from": "invoicing",
+   "to": "payments-api"
+  },
+  {
+   "from": "invoicing",
+   "to": "order-service"
+  },
+  {
+   "from": "loyalty",
+   "to": "order-service"
+  },
+  {
+   "from": "loyalty",
+   "to": "user-profile"
+  },
+  {
+   "from": "payments-api",
+   "to": "fraud-check"
+  },
+  {
+   "from": "payments-api",
+   "to": "redis-cache"
+  },
+  {
+   "from": "fraud-check",
+   "to": "user-profile"
+  },
+  {
+   "from": "fraud-check",
+   "to": "kafka-bus"
+  },
+  {
+   "from": "notifications",
+   "to": "kafka-bus"
+  },
+  {
+   "from": "notifications",
+   "to": "user-profile"
+  },
+  {
+   "from": "search",
+   "to": "redis-cache"
+  },
+  {
+   "from": "recommendations",
+   "to": "user-profile"
+  },
+  {
+   "from": "recommendations",
+   "to": "redis-cache"
+  },
+  {
+   "from": "inventory",
+   "to": "kafka-bus"
+  },
+  {
+   "from": "inventory",
+   "to": "redis-cache"
+  }
+ ],
+ "ownership": [
+  {
+   "service": "web-frontend",
+   "engineer": "arjun-reddy",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "mobile-bff",
+   "engineer": "sana-khan",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "checkout",
+   "engineer": "sana-khan",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "cart",
+   "engineer": "arjun-reddy",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "order-service",
+   "engineer": "sana-khan",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "auth-service",
+   "engineer": "lakshmi-pillai",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "search",
+   "engineer": "kiran-rao",
+   "valid_from": "2025-11-01",
+   "valid_to": "2026-06-30"
+  },
+  {
+   "service": "search",
+   "engineer": "meera-nair",
+   "valid_from": "2026-07-01",
+   "valid_to": null
+  },
+  {
+   "service": "recommendations",
+   "engineer": "meera-nair",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "inventory",
+   "engineer": "kiran-rao",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "payments-api",
+   "engineer": "asha-menon",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "fraud-check",
+   "engineer": "ravi-iyer",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "user-profile",
+   "engineer": "lakshmi-pillai",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "refunds",
+   "engineer": "sana-khan",
+   "valid_from": "2025-11-01",
+   "valid_to": "2026-04-30"
+  },
+  {
+   "service": "refunds",
+   "engineer": "dev-patel",
+   "valid_from": "2026-05-01",
+   "valid_to": null
+  },
+  {
+   "service": "subscriptions",
+   "engineer": "tara-bose",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "redis-cache",
+   "engineer": "vikram-singh",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "kafka-bus",
+   "engineer": "vikram-singh",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "notifications",
+   "engineer": "tara-bose",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "shipping-quotes",
+   "engineer": "arjun-reddy",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "invoicing",
+   "engineer": "dev-patel",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "loyalty",
+   "engineer": "tara-bose",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "feature-flags",
+   "engineer": "ravi-iyer",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  },
+  {
+   "service": "admin-portal",
+   "engineer": "ravi-iyer",
+   "valid_from": "2025-11-01",
+   "valid_to": null
+  }
+ ],
+ "deploys": [
+  {
+   "id": "DEP-001",
+   "service": "kafka-bus",
+   "version": "v2.7.6",
+   "deployed_at": "2026-03-03T18:54:00Z",
+   "author": "vikram-singh",
+   "notes": ""
+  },
+  {
+   "id": "DEP-002",
+   "service": "recommendations",
+   "version": "v1.7.2",
+   "deployed_at": "2026-03-05T13:00:00Z",
+   "author": "meera-nair",
+   "notes": ""
+  },
+  {
+   "id": "DEP-003",
+   "service": "shipping-quotes",
+   "version": "v1.4.5",
+   "deployed_at": "2026-03-18T09:00:00Z",
+   "author": "arjun-reddy",
+   "notes": ""
+  },
+  {
+   "id": "DEP-004",
+   "service": "admin-portal",
+   "version": "v1.11.4",
+   "deployed_at": "2026-03-20T13:00:00Z",
+   "author": "ravi-iyer",
+   "notes": ""
+  },
+  {
+   "id": "DEP-005",
+   "service": "mobile-bff",
+   "version": "v4.2.1",
+   "deployed_at": "2026-03-27T12:00:00Z",
+   "author": "sana-khan",
+   "notes": ""
+  },
+  {
+   "id": "DEP-006",
+   "service": "notifications",
+   "version": "v3.11.3",
+   "deployed_at": "2026-03-29T12:00:00Z",
+   "author": "tara-bose",
+   "notes": ""
+  },
+  {
+   "id": "DEP-007",
+   "service": "web-frontend",
+   "version": "v4.13.0",
+   "deployed_at": "2026-03-30T14:00:00Z",
+   "author": "arjun-reddy",
+   "notes": ""
+  },
+  {
+   "id": "DEP-008",
+   "service": "search",
+   "version": "v3.2.6",
+   "deployed_at": "2026-04-12T06:00:00Z",
+   "author": "kiran-rao",
+   "notes": ""
+  },
+  {
+   "id": "DEP-009",
+   "service": "checkout",
+   "version": "v3.7.6",
+   "deployed_at": "2026-04-28T09:00:00Z",
+   "author": "sana-khan",
+   "notes": ""
+  },
+  {
+   "id": "DEP-010",
+   "service": "payments-api",
+   "version": "v2.0.4",
+   "deployed_at": "2026-05-06T04:10:00Z",
+   "author": "asha-menon",
+   "notes": "Release v2.0.4"
+  },
+  {
+   "id": "DEP-011",
+   "service": "redis-cache",
+   "version": "v1.10.1",
+   "deployed_at": "2026-05-10T07:00:00Z",
+   "author": "vikram-singh",
+   "notes": ""
+  },
+  {
+   "id": "DEP-012",
+   "service": "refunds",
+   "version": "v4.3.3",
+   "deployed_at": "2026-05-16T08:00:00Z",
+   "author": "dev-patel",
+   "notes": ""
+  },
+  {
+   "id": "DEP-013",
+   "service": "shipping-quotes",
+   "version": "v1.13.6",
+   "deployed_at": "2026-05-16T22:25:00Z",
+   "author": "arjun-reddy",
+   "notes": ""
+  },
+  {
+   "id": "DEP-014",
+   "service": "invoicing",
+   "version": "v3.14.1",
+   "deployed_at": "2026-05-20T14:00:00Z",
+   "author": "dev-patel",
+   "notes": ""
+  },
+  {
+   "id": "DEP-015",
+   "service": "feature-flags",
+   "version": "v3.11.1",
+   "deployed_at": "2026-05-29T07:00:00Z",
+   "author": "ravi-iyer",
+   "notes": ""
+  },
+  {
+   "id": "DEP-016",
+   "service": "user-profile",
+   "version": "v2.13.2",
+   "deployed_at": "2026-05-29T12:00:00Z",
+   "author": "lakshmi-pillai",
+   "notes": ""
+  },
+  {
+   "id": "DEP-017",
+   "service": "inventory",
+   "version": "v3.14.1",
+   "deployed_at": "2026-06-08T13:00:00Z",
+   "author": "kiran-rao",
+   "notes": ""
+  },
+  {
+   "id": "DEP-018",
+   "service": "cart",
+   "version": "v3.11.2",
+   "deployed_at": "2026-06-10T12:00:00Z",
+   "author": "arjun-reddy",
+   "notes": ""
+  },
+  {
+   "id": "DEP-019",
+   "service": "inventory",
+   "version": "v3.10.0",
+   "deployed_at": "2026-06-18T01:10:00Z",
+   "author": "kiran-rao",
+   "notes": ""
+  },
+  {
+   "id": "DEP-020",
+   "service": "payments-api",
+   "version": "v2.1.0",
+   "deployed_at": "2026-06-19T03:40:00Z",
+   "author": "asha-menon",
+   "notes": "Release v2.1.0"
+  },
+  {
+   "id": "DEP-021",
+   "service": "refunds",
+   "version": "v4.8.5",
+   "deployed_at": "2026-06-22T00:44:00Z",
+   "author": "dev-patel",
+   "notes": ""
+  },
+  {
+   "id": "DEP-022",
+   "service": "subscriptions",
+   "version": "v1.7.2",
+   "deployed_at": "2026-07-09T07:00:00Z",
+   "author": "tara-bose",
+   "notes": ""
+  },
+  {
+   "id": "DEP-023",
+   "service": "payments-api",
+   "version": "v2.1.2",
+   "deployed_at": "2026-07-14T05:05:00Z",
+   "author": "dev-patel",
+   "notes": "Release v2.1.2"
+  },
+  {
+   "id": "DEP-024",
+   "service": "order-service",
+   "version": "v3.12.3",
+   "deployed_at": "2026-07-24T08:00:00Z",
+   "author": "sana-khan",
+   "notes": ""
+  },
+  {
+   "id": "DEP-025",
+   "service": "kafka-bus",
+   "version": "v2.14.0",
+   "deployed_at": "2026-07-25T06:00:00Z",
+   "author": "vikram-singh",
+   "notes": ""
+  },
+  {
+   "id": "DEP-026",
+   "service": "fraud-check",
+   "version": "v2.9.1",
+   "deployed_at": "2026-07-28T11:00:00Z",
+   "author": "ravi-iyer",
+   "notes": ""
+  },
+  {
+   "id": "DEP-027",
+   "service": "cart",
+   "version": "v3.10.4",
+   "deployed_at": "2026-07-29T23:22:00Z",
+   "author": "arjun-reddy",
+   "notes": ""
+  },
+  {
+   "id": "DEP-028",
+   "service": "payments-api",
+   "version": "v2.2.0",
+   "deployed_at": "2026-08-09T04:30:00Z",
+   "author": "asha-menon",
+   "notes": "Release v2.2.0"
+  },
+  {
+   "id": "DEP-029",
+   "service": "inventory",
+   "version": "v3.8.5",
+   "deployed_at": "2026-08-16T16:50:00Z",
+   "author": "kiran-rao",
+   "notes": ""
+  },
+  {
+   "id": "DEP-030",
+   "service": "checkout",
+   "version": "v3.8.6",
+   "deployed_at": "2026-08-28T05:03:00Z",
+   "author": "sana-khan",
+   "notes": ""
+  },
+  {
+   "id": "DEP-031",
+   "service": "auth-service",
+   "version": "v1.14.0",
+   "deployed_at": "2026-08-30T07:00:00Z",
+   "author": "lakshmi-pillai",
+   "notes": ""
+  },
+  {
+   "id": "DEP-032",
+   "service": "recommendations",
+   "version": "v1.6.6",
+   "deployed_at": "2026-09-07T14:18:00Z",
+   "author": "meera-nair",
+   "notes": ""
+  },
+  {
+   "id": "DEP-033",
+   "service": "loyalty",
+   "version": "v3.12.5",
+   "deployed_at": "2026-09-08T11:00:00Z",
+   "author": "tara-bose",
+   "notes": ""
+  },
+  {
+   "id": "DEP-034",
+   "service": "payments-api",
+   "version": "v2.3.0",
+   "deployed_at": "2026-09-25T03:55:00Z",
+   "author": "dev-patel",
+   "notes": "Release v2.3.0"
+  },
+  {
+   "id": "DEP-035",
+   "service": "inventory",
+   "version": "v4.8.0",
+   "deployed_at": "2026-10-13T05:30:00Z",
+   "author": "kiran-rao",
+   "notes": "Release v4.8.0"
+  },
+  {
+   "id": "DEP-036",
+   "service": "payments-api",
+   "version": "v2.3.1",
+   "deployed_at": "2026-10-14T04:50:00Z",
+   "author": "asha-menon",
+   "notes": "Release v2.3.1"
+  }
+ ],
+ "incidents": [
+  {
+   "id": "INC-001",
+   "title": "admin-portal latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-03-03T19:54:00Z",
+   "resolved_at": "2026-03-03T21:06:00Z",
+   "summary": "Root cause in kafka-bus (latency). Resolved via flush-cache.",
+   "origin": "kafka-bus",
+   "impacted": [
+    "admin-portal",
+    "checkout"
+   ],
+   "followed_deploy": "DEP-001",
+   "attempts": [
+    {
+     "id": "ATT-001",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-03-03T20:21:00Z",
+     "engineer": "vikram-singh",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-002",
+     "fix": "flush-cache",
+     "status": "SUCCESS",
+     "ts": "2026-03-03T20:58:00Z",
+     "engineer": "vikram-singh",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-002",
+   "title": "invoicing requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-03-14T08:00:00Z",
+   "resolved_at": "2026-03-14T08:27:00Z",
+   "summary": "Root cause in invoicing (timeout). Resolved via scale-up-replicas.",
+   "origin": "invoicing",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-003",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-03-14T08:19:00Z",
+     "engineer": "dev-patel",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-003",
+   "title": "cart 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-03-24T10:49:00Z",
+   "resolved_at": "2026-03-24T11:26:00Z",
+   "summary": "Root cause in feature-flags (5xx). Resolved via toggle-feature-flag.",
+   "origin": "feature-flags",
+   "impacted": [
+    "cart",
+    "checkout",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-004",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-03-24T11:18:00Z",
+     "engineer": "ravi-iyer",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-004",
+   "title": "mobile-bff latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-04-28T22:59:00Z",
+   "resolved_at": "2026-04-28T23:36:00Z",
+   "summary": "Root cause in checkout (latency). Resolved via restart-pods.",
+   "origin": "checkout",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-005",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-04-28T23:28:00Z",
+     "engineer": "sana-khan",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-005",
+   "title": "mobile-bff 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-05-04T12:37:00Z",
+   "resolved_at": "2026-05-04T13:14:00Z",
+   "summary": "Root cause in checkout (5xx). Resolved via toggle-feature-flag.",
+   "origin": "checkout",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-006",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-05-04T13:06:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-006",
+   "title": "cart requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-05-05T23:13:00Z",
+   "resolved_at": "2026-05-05T23:44:00Z",
+   "summary": "Root cause in inventory (timeout). Resolved via increase-conn-pool.",
+   "origin": "inventory",
+   "impacted": [
+    "cart",
+    "order-service"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-007",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-05-05T23:36:00Z",
+     "engineer": "kiran-rao",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-007",
+   "title": "checkout latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-05-06T06:15:00Z",
+   "resolved_at": "2026-05-06T07:14:00Z",
+   "summary": "Root cause in payments-api (latency). Resolved via rollback-deploy.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "order-service"
+   ],
+   "followed_deploy": "DEP-010",
+   "attempts": [
+    {
+     "id": "ATT-008",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-05-06T06:40:00Z",
+     "engineer": "asha-menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-009",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-05-06T07:06:00Z",
+     "engineer": "asha-menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-008",
+   "title": "notifications pods OOMKilled",
+   "severity": "SEV3",
+   "symptom": "oom",
+   "status": "resolved",
+   "started_at": "2026-05-09T21:35:00Z",
+   "resolved_at": "2026-05-09T22:15:00Z",
+   "summary": "Root cause in notifications (oom). Resolved via restart-pods.",
+   "origin": "notifications",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-010",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-05-09T22:07:00Z",
+     "engineer": "tara-bose",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-009",
+   "title": "notifications requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-05-11T04:31:00Z",
+   "resolved_at": "2026-05-11T05:46:00Z",
+   "summary": "Root cause in notifications (timeout). Resolved via increase-conn-pool.",
+   "origin": "notifications",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-011",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-05-11T05:02:00Z",
+     "engineer": "tara-bose",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-012",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-05-11T05:38:00Z",
+     "engineer": "tara-bose",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-010",
+   "title": "mobile-bff 5xx error spike",
+   "severity": "SEV2",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-05-12T14:20:00Z",
+   "resolved_at": "2026-05-12T15:00:00Z",
+   "summary": "Root cause in checkout (5xx). Resolved via rollback-deploy.",
+   "origin": "checkout",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-013",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-05-12T14:52:00Z",
+     "engineer": "sana-khan",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-011",
+   "title": "checkout 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-05-17T00:25:00Z",
+   "resolved_at": "2026-05-17T00:58:00Z",
+   "summary": "Root cause in shipping-quotes (5xx). Resolved via toggle-feature-flag.",
+   "origin": "shipping-quotes",
+   "impacted": [
+    "checkout",
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": "DEP-013",
+   "attempts": [
+    {
+     "id": "ATT-014",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-05-17T00:50:00Z",
+     "engineer": "arjun-reddy",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-012",
+   "title": "checkout requests timing out",
+   "severity": "SEV2",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-05-28T09:20:00Z",
+   "resolved_at": "2026-05-28T10:02:00Z",
+   "summary": "Root cause in payments-api (timeout). Resolved via increase-conn-pool.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "refunds"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-015",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-05-28T09:54:00Z",
+     "engineer": "asha-menon",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-013",
+   "title": "order-service latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-05-30T19:45:00Z",
+   "resolved_at": "2026-05-30T20:15:00Z",
+   "summary": "Root cause in fraud-check (latency). Resolved via flush-cache.",
+   "origin": "fraud-check",
+   "impacted": [
+    "order-service",
+    "refunds"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-016",
+     "fix": "flush-cache",
+     "status": "SUCCESS",
+     "ts": "2026-05-30T20:07:00Z",
+     "engineer": "ravi-iyer",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-014",
+   "title": "mobile-bff 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-06-12T08:58:00Z",
+   "resolved_at": "2026-06-12T09:46:00Z",
+   "summary": "Root cause in auth-service (5xx). Resolved via rollback-deploy.",
+   "origin": "auth-service",
+   "impacted": [
+    "mobile-bff"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-017",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-06-12T09:38:00Z",
+     "engineer": "lakshmi-pillai",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-015",
+   "title": "web-frontend 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-06-14T07:17:00Z",
+   "resolved_at": "2026-06-14T07:43:00Z",
+   "summary": "Root cause in cart (5xx). Resolved via rollback-deploy.",
+   "origin": "cart",
+   "impacted": [
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-018",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-06-14T07:35:00Z",
+     "engineer": "arjun-reddy",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-016",
+   "title": "mobile-bff 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-06-16T09:50:00Z",
+   "resolved_at": "2026-06-16T10:17:00Z",
+   "summary": "Root cause in mobile-bff (5xx). Resolved via toggle-feature-flag.",
+   "origin": "mobile-bff",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-019",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-06-16T10:09:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-017",
+   "title": "admin-portal 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-06-18T04:10:00Z",
+   "resolved_at": "2026-06-18T04:42:00Z",
+   "summary": "Root cause in inventory (5xx). Resolved via restart-pods.",
+   "origin": "inventory",
+   "impacted": [
+    "admin-portal",
+    "refunds",
+    "web-frontend"
+   ],
+   "followed_deploy": "DEP-019",
+   "attempts": [
+    {
+     "id": "ATT-020",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-06-18T04:34:00Z",
+     "engineer": "kiran-rao",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-018",
+   "title": "checkout latency spiking",
+   "severity": "SEV1",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-06-19T05:45:00Z",
+   "resolved_at": "2026-06-19T07:16:00Z",
+   "summary": "Root cause in payments-api (latency). Resolved via rollback-deploy.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "order-service",
+    "subscriptions"
+   ],
+   "followed_deploy": "DEP-020",
+   "attempts": [
+    {
+     "id": "ATT-021",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-06-19T06:20:00Z",
+     "engineer": "asha-menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-022",
+     "fix": "scale-up-replicas",
+     "status": "FAILED",
+     "ts": "2026-06-19T06:48:00Z",
+     "engineer": "asha-menon",
+     "notes": ""
+    },
+    {
+     "id": "ATT-023",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-06-19T07:08:00Z",
+     "engineer": "asha-menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-019",
+   "title": "admin-portal 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-06-22T03:44:00Z",
+   "resolved_at": "2026-06-22T04:29:00Z",
+   "summary": "Root cause in refunds (5xx). Resolved via toggle-feature-flag.",
+   "origin": "refunds",
+   "impacted": [
+    "admin-portal"
+   ],
+   "followed_deploy": "DEP-021",
+   "attempts": [
+    {
+     "id": "ATT-024",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-06-22T04:21:00Z",
+     "engineer": "dev-patel",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-020",
+   "title": "invoicing requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-06-22T10:18:00Z",
+   "resolved_at": "2026-06-22T11:34:00Z",
+   "summary": "Root cause in kafka-bus (timeout). Resolved via scale-up-replicas.",
+   "origin": "kafka-bus",
+   "impacted": [
+    "invoicing",
+    "loyalty"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-025",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-06-22T10:46:00Z",
+     "engineer": "vikram-singh",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-026",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-06-22T11:26:00Z",
+     "engineer": "vikram-singh",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-021",
+   "title": "web-frontend latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-06-25T19:25:00Z",
+   "resolved_at": "2026-06-25T20:10:00Z",
+   "summary": "Root cause in web-frontend (latency). Resolved via flush-cache.",
+   "origin": "web-frontend",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-027",
+     "fix": "flush-cache",
+     "status": "SUCCESS",
+     "ts": "2026-06-25T20:02:00Z",
+     "engineer": "arjun-reddy",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-022",
+   "title": "subscriptions 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-07-04T05:06:00Z",
+   "resolved_at": "2026-07-04T06:09:00Z",
+   "summary": "Root cause in subscriptions (5xx). Resolved via rollback-deploy.",
+   "origin": "subscriptions",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-028",
+     "fix": "toggle-feature-flag",
+     "status": "FAILED",
+     "ts": "2026-07-04T05:27:00Z",
+     "engineer": "tara-bose",
+     "notes": ""
+    },
+    {
+     "id": "ATT-029",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-07-04T06:01:00Z",
+     "engineer": "tara-bose",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-023",
+   "title": "loyalty pods OOMKilled",
+   "severity": "SEV3",
+   "symptom": "oom",
+   "status": "resolved",
+   "started_at": "2026-07-06T02:58:00Z",
+   "resolved_at": "2026-07-06T03:24:00Z",
+   "summary": "Root cause in loyalty (oom). Resolved via restart-pods.",
+   "origin": "loyalty",
+   "impacted": [],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-030",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-07-06T03:16:00Z",
+     "engineer": "tara-bose",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-024",
+   "title": "checkout 5xx error spike",
+   "severity": "SEV1",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-07-14T07:00:00Z",
+   "resolved_at": "2026-07-14T07:27:00Z",
+   "summary": "Root cause in payments-api (5xx). Resolved via rollback-deploy.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "invoicing"
+   ],
+   "followed_deploy": "DEP-023",
+   "attempts": [
+    {
+     "id": "ATT-031",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-07-14T07:19:00Z",
+     "engineer": "asha-menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-025",
+   "title": "web-frontend requests timing out",
+   "severity": "SEV2",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-07-22T05:37:00Z",
+   "resolved_at": "2026-07-22T06:07:00Z",
+   "summary": "Root cause in recommendations (timeout). Resolved via scale-up-replicas.",
+   "origin": "recommendations",
+   "impacted": [
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-032",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-07-22T05:59:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-026",
+   "title": "checkout latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-07-30T00:22:00Z",
+   "resolved_at": "2026-07-30T01:09:00Z",
+   "summary": "Root cause in cart (latency). Resolved via rollback-deploy.",
+   "origin": "cart",
+   "impacted": [
+    "checkout",
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": "DEP-027",
+   "attempts": [
+    {
+     "id": "ATT-033",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-07-30T01:01:00Z",
+     "engineer": "arjun-reddy",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-027",
+   "title": "admin-portal latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-08-03T13:07:00Z",
+   "resolved_at": "2026-08-03T13:39:00Z",
+   "summary": "Root cause in order-service (latency). Resolved via flush-cache.",
+   "origin": "order-service",
+   "impacted": [
+    "admin-portal"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-034",
+     "fix": "flush-cache",
+     "status": "SUCCESS",
+     "ts": "2026-08-03T13:31:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-028",
+   "title": "checkout latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-08-09T06:20:00Z",
+   "resolved_at": "2026-08-09T07:12:00Z",
+   "summary": "Root cause in payments-api (latency). Resolved via rollback-deploy.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "refunds"
+   ],
+   "followed_deploy": "DEP-028",
+   "attempts": [
+    {
+     "id": "ATT-035",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-08-09T06:40:00Z",
+     "engineer": "asha-menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-036",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-08-09T07:04:00Z",
+     "engineer": "asha-menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-029",
+   "title": "notifications 5xx error spike",
+   "severity": "SEV3",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-08-14T07:32:00Z",
+   "resolved_at": "2026-08-14T08:04:00Z",
+   "summary": "Root cause in user-profile (5xx). Resolved via toggle-feature-flag.",
+   "origin": "user-profile",
+   "impacted": [
+    "notifications",
+    "subscriptions"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-037",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-08-14T07:56:00Z",
+     "engineer": "lakshmi-pillai",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-030",
+   "title": "invoicing pods OOMKilled",
+   "severity": "SEV3",
+   "symptom": "oom",
+   "status": "resolved",
+   "started_at": "2026-08-16T18:50:00Z",
+   "resolved_at": "2026-08-16T19:32:00Z",
+   "summary": "Root cause in inventory (oom). Resolved via restart-pods.",
+   "origin": "inventory",
+   "impacted": [
+    "invoicing",
+    "mobile-bff"
+   ],
+   "followed_deploy": "DEP-029",
+   "attempts": [
+    {
+     "id": "ATT-038",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-08-16T19:24:00Z",
+     "engineer": "kiran-rao",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-031",
+   "title": "mobile-bff requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-08-22T02:43:00Z",
+   "resolved_at": "2026-08-22T04:17:00Z",
+   "summary": "Root cause in search (timeout). Resolved via increase-conn-pool.",
+   "origin": "search",
+   "impacted": [
+    "mobile-bff"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-039",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-08-22T03:10:00Z",
+     "engineer": "meera-nair",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-040",
+     "fix": "scale-up-replicas",
+     "status": "FAILED",
+     "ts": "2026-08-22T03:50:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    },
+    {
+     "id": "ATT-041",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-08-22T04:09:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-032",
+   "title": "mobile-bff pods OOMKilled",
+   "severity": "SEV3",
+   "symptom": "oom",
+   "status": "resolved",
+   "started_at": "2026-08-23T16:31:00Z",
+   "resolved_at": "2026-08-23T16:59:00Z",
+   "summary": "Root cause in search (oom). Resolved via scale-up-replicas.",
+   "origin": "search",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-042",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-08-23T16:51:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-033",
+   "title": "mobile-bff requests timing out",
+   "severity": "SEV2",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-08-28T06:03:00Z",
+   "resolved_at": "2026-08-28T07:26:00Z",
+   "summary": "Root cause in checkout (timeout). Resolved via scale-up-replicas.",
+   "origin": "checkout",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": "DEP-030",
+   "attempts": [
+    {
+     "id": "ATT-043",
+     "fix": "increase-conn-pool",
+     "status": "FAILED",
+     "ts": "2026-08-28T06:39:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    },
+    {
+     "id": "ATT-044",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-08-28T07:18:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-034",
+   "title": "mobile-bff requests timing out",
+   "severity": "SEV2",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-08-31T20:32:00Z",
+   "resolved_at": "2026-08-31T22:06:00Z",
+   "summary": "Root cause in shipping-quotes (timeout). Resolved via scale-up-replicas.",
+   "origin": "shipping-quotes",
+   "impacted": [
+    "mobile-bff"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-045",
+     "fix": "increase-conn-pool",
+     "status": "FAILED",
+     "ts": "2026-08-31T20:57:00Z",
+     "engineer": "arjun-reddy",
+     "notes": ""
+    },
+    {
+     "id": "ATT-046",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-08-31T21:26:00Z",
+     "engineer": "arjun-reddy",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-047",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-08-31T21:58:00Z",
+     "engineer": "arjun-reddy",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-035",
+   "title": "checkout requests timing out",
+   "severity": "SEV2",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-09-02T11:10:00Z",
+   "resolved_at": "2026-09-02T12:17:00Z",
+   "summary": "Root cause in payments-api (timeout). Resolved via increase-conn-pool.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "order-service"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-048",
+     "fix": "flush-cache",
+     "status": "FAILED",
+     "ts": "2026-09-02T11:45:00Z",
+     "engineer": "asha-menon",
+     "notes": ""
+    },
+    {
+     "id": "ATT-049",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-09-02T12:09:00Z",
+     "engineer": "asha-menon",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-036",
+   "title": "web-frontend latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-09-07T16:18:00Z",
+   "resolved_at": "2026-09-07T18:04:00Z",
+   "summary": "Root cause in recommendations (latency). Resolved via rollback-deploy.",
+   "origin": "recommendations",
+   "impacted": [
+    "web-frontend"
+   ],
+   "followed_deploy": "DEP-032",
+   "attempts": [
+    {
+     "id": "ATT-050",
+     "fix": "flush-cache",
+     "status": "FAILED",
+     "ts": "2026-09-07T16:56:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    },
+    {
+     "id": "ATT-051",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-09-07T17:29:00Z",
+     "engineer": "meera-nair",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-052",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-09-07T17:56:00Z",
+     "engineer": "meera-nair",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-037",
+   "title": "order-service latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-09-11T09:43:00Z",
+   "resolved_at": "2026-09-11T10:21:00Z",
+   "summary": "Root cause in redis-cache (latency). Resolved via scale-up-replicas.",
+   "origin": "redis-cache",
+   "impacted": [
+    "order-service",
+    "refunds",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-053",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-09-11T10:13:00Z",
+     "engineer": "vikram-singh",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-038",
+   "title": "loyalty 5xx error spike",
+   "severity": "SEV2",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-09-14T04:35:00Z",
+   "resolved_at": "2026-09-14T05:48:00Z",
+   "summary": "Root cause in order-service (5xx). Resolved via restart-pods.",
+   "origin": "order-service",
+   "impacted": [
+    "loyalty",
+    "mobile-bff",
+    "refunds"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-054",
+     "fix": "toggle-feature-flag",
+     "status": "FAILED",
+     "ts": "2026-09-14T05:08:00Z",
+     "engineer": "sana-khan",
+     "notes": ""
+    },
+    {
+     "id": "ATT-055",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-09-14T05:40:00Z",
+     "engineer": "sana-khan",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-039",
+   "title": "mobile-bff latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-09-17T23:32:00Z",
+   "resolved_at": "2026-09-18T01:10:00Z",
+   "summary": "Root cause in search (latency). Resolved via restart-pods.",
+   "origin": "search",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-056",
+     "fix": "flush-cache",
+     "status": "FAILED",
+     "ts": "2026-09-18T00:09:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    },
+    {
+     "id": "ATT-057",
+     "fix": "scale-up-replicas",
+     "status": "FAILED",
+     "ts": "2026-09-18T00:32:00Z",
+     "engineer": "meera-nair",
+     "notes": ""
+    },
+    {
+     "id": "ATT-058",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-09-18T01:02:00Z",
+     "engineer": "meera-nair",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  },
+  {
+   "id": "INC-040",
+   "title": "checkout pods OOMKilled",
+   "severity": "SEV3",
+   "symptom": "oom",
+   "status": "resolved",
+   "started_at": "2026-09-18T11:34:00Z",
+   "resolved_at": "2026-09-18T12:18:00Z",
+   "summary": "Root cause in redis-cache (oom). Resolved via scale-up-replicas.",
+   "origin": "redis-cache",
+   "impacted": [
+    "checkout",
+    "inventory",
+    "subscriptions"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-059",
+     "fix": "scale-up-replicas",
+     "status": "SUCCESS",
+     "ts": "2026-09-18T12:10:00Z",
+     "engineer": "vikram-singh",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-041",
+   "title": "invoicing requests timing out",
+   "severity": "SEV3",
+   "symptom": "timeout",
+   "status": "resolved",
+   "started_at": "2026-09-23T01:11:00Z",
+   "resolved_at": "2026-09-23T03:05:00Z",
+   "summary": "Root cause in fraud-check (timeout). Resolved via increase-conn-pool.",
+   "origin": "fraud-check",
+   "impacted": [
+    "invoicing"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-060",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-09-23T01:47:00Z",
+     "engineer": "ravi-iyer",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-061",
+     "fix": "scale-up-replicas",
+     "status": "FAILED",
+     "ts": "2026-09-23T02:25:00Z",
+     "engineer": "ravi-iyer",
+     "notes": ""
+    },
+    {
+     "id": "ATT-062",
+     "fix": "increase-conn-pool",
+     "status": "SUCCESS",
+     "ts": "2026-09-23T02:57:00Z",
+     "engineer": "ravi-iyer",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-042",
+   "title": "checkout latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-09-25T05:50:00Z",
+   "resolved_at": "2026-09-25T07:08:00Z",
+   "summary": "Root cause in payments-api (latency). Resolved via rollback-deploy.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "subscriptions"
+   ],
+   "followed_deploy": "DEP-034",
+   "attempts": [
+    {
+     "id": "ATT-063",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-09-25T06:28:00Z",
+     "engineer": "asha-menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-064",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-09-25T07:00:00Z",
+     "engineer": "asha-menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "id": "INC-043",
+   "title": "checkout 5xx error spike",
+   "severity": "SEV2",
+   "symptom": "5xx",
+   "status": "resolved",
+   "started_at": "2026-10-08T08:30:00Z",
+   "resolved_at": "2026-10-08T09:47:00Z",
+   "summary": "Root cause in payments-api (5xx). Resolved via toggle-feature-flag.",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout"
+   ],
+   "followed_deploy": null,
+   "attempts": [
+    {
+     "id": "ATT-065",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-10-08T09:09:00Z",
+     "engineer": "asha-menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-066",
+     "fix": "toggle-feature-flag",
+     "status": "SUCCESS",
+     "ts": "2026-10-08T09:39:00Z",
+     "engineer": "asha-menon",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "INC-044",
+   "title": "checkout latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-10-12T09:15:00Z",
+   "resolved_at": "2026-10-12T09:55:00Z",
+   "summary": "Root cause in inventory (latency). Resolved via restart-pods.",
+   "origin": "inventory",
+   "impacted": [
+    "checkout",
+    "cart"
+   ],
+   "followed_deploy": "DEP-035",
+   "attempts": [
+    {
+     "id": "ATT-067",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-10-12T09:47:00Z",
+     "engineer": "kiran-rao",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  }
+ ],
+ "similar": [
+  {
+   "from": "INC-010",
+   "to": "INC-005",
+   "score": 0.9
+  },
+  {
+   "from": "INC-018",
+   "to": "INC-007",
+   "score": 0.9
+  },
+  {
+   "from": "INC-028",
+   "to": "INC-007",
+   "score": 0.9
+  },
+  {
+   "from": "INC-028",
+   "to": "INC-018",
+   "score": 0.9
+  },
+  {
+   "from": "INC-035",
+   "to": "INC-012",
+   "score": 0.9
+  },
+  {
+   "from": "INC-042",
+   "to": "INC-007",
+   "score": 0.9
+  },
+  {
+   "from": "INC-042",
+   "to": "INC-018",
+   "score": 0.9
+  },
+  {
+   "from": "INC-042",
+   "to": "INC-028",
+   "score": 0.9
+  },
+  {
+   "from": "INC-043",
+   "to": "INC-024",
+   "score": 0.9
+  }
+ ]
+}
