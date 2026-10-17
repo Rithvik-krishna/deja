@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type GraphPayload } from "../api/client";
+import { api, type Catalog, type GraphPayload } from "../api/client";
 import type { Recommendation } from "../lib/apiTypes";
-import { useAsync } from "../state/useAsync";
+import { useAsync, type AsyncState } from "../state/useAsync";
 import type { ToastKind } from "../state/useToasts";
 import { IncidentDetailView } from "./incident/IncidentDetailView";
 import { IncidentList, type IncidentFilter } from "./incident/IncidentList";
@@ -17,6 +17,8 @@ export interface IncidentPanelProps {
   /** Show this incident-scoped graph in the centre panel. Only called for explicit user actions, never on background refreshes. */
   onGraphChange: (graph: GraphPayload) => void;
   onNotify: (kind: ToastKind, text: string) => void;
+  /** Shared GET /catalog state owned by App (fix options for the outcome form). */
+  catalog: AsyncState<Catalog>;
 }
 
 interface OutcomeResult {
@@ -24,7 +26,7 @@ interface OutcomeResult {
   recommendations: Recommendation[];
 }
 
-export function IncidentPanel({ selectedIncidentId, onSelectIncident, refreshToken, onGraphChange, onNotify }: IncidentPanelProps) {
+export function IncidentPanel({ selectedIncidentId, onSelectIncident, refreshToken, onGraphChange, onNotify, catalog }: IncidentPanelProps) {
   const [filter, setFilter] = useState<IncidentFilter>("all");
   const [localTick, setLocalTick] = useState(0);
   const [lastOutcome, setLastOutcome] = useState<OutcomeResult | null>(null);
@@ -35,7 +37,6 @@ export function IncidentPanel({ selectedIncidentId, onSelectIncident, refreshTok
   const list = useAsync(() => api.incidents(), "incidents", refreshKey);
   const detail = useAsync(() => api.incident(id as string), id ?? "", refreshKey, id !== null);
   const timeline = useAsync(() => api.timeline(id as string), id ?? "", refreshKey, id !== null);
-  const catalog = useAsync(() => api.catalog(), "catalog");
 
   const detailData = detail.data && detail.data.id === id ? detail.data : undefined;
 

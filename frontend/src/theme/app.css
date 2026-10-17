@@ -760,3 +760,73 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ---------- Owners panel ---------- */
+.owners-panel {
+  display: flex;
+  flex-direction: column;
+}
+.owner-controls {
+  display: grid;
+  gap: 6px;
+}
+.owner-controls label,
+.outcome-form input[type="date"] + .hint {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
+.owner-controls select,
+.owner-controls input[type="date"],
+.outcome-form input[type="date"],
+.outcome-form select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.date-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.owner-result {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 2px;
+}
+.owner-line {
+  display: grid;
+  gap: 0;
+}
+.owner-name {
+  font-size: 1.375rem;
+}
+.ownership-history {
+  display: grid;
+  gap: 8px;
+  border-left: 2px solid var(--border-strong);
+  margin-left: 4px;
+  padding-left: 14px;
+}
+.ownership-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ownership-history .is-superseded .own-name {
+  color: var(--text-muted);
+}
+.reassign-result {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--success);
+  background: var(--success-bg);
+  border-radius: 6px;
+}

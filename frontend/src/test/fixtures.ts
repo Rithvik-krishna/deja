@@ -1,7 +1,7 @@
 // Fixtures typed against the real contract types (so a contract change breaks the tests at compile time).
 // Shapes and values mirror contract/examples/*.json.
 import type { ChatResponse, GraphPayload, IncidentDetail, IncidentSummary, OutcomeResponse, TimelineEvent } from "../api/client";
-import type { Catalog } from "../api/client";
+import type { Catalog, OwnerResponse, ReassignResponse } from "../api/client";
 
 export const graphA: GraphPayload = {
   nodes: [
@@ -81,7 +81,10 @@ export const catalog: Catalog = {
     { id: "restart-pods", name: "restart-pods", description: "Restart affected pods/instances" },
     { id: "rollback-deploy", name: "rollback-deploy", description: "Roll back to the previous release" },
   ],
-  engineers: [{ id: "asha", name: "Asha Menon", team: "payments-platform" }],
+  engineers: [
+    { id: "asha-menon", name: "Asha Menon", team: "payments-platform" },
+    { id: "ravi-iyer", name: "Ravi Iyer", team: "platform" },
+  ],
   symptoms: ["latency", "timeout", "5xx", "oom"],
 };
 
@@ -115,3 +118,32 @@ export function deferred<T>() {
   });
   return { promise, resolve, reject };
 }
+
+// Ownership fixtures mirror contract/examples/owner_july.json and reassign.json.
+export const ownerNow: OwnerResponse = {
+  service: "payments-api",
+  date: "2026-10-17",
+  owner: "Asha Menon",
+  valid_from: "2025-11-01",
+  valid_to: null,
+  history: [{ engineer: "Asha Menon", valid_from: "2025-11-01", valid_to: null }],
+};
+
+export const ownerAfterReassign: OwnerResponse = {
+  service: "payments-api",
+  date: "2026-10-17",
+  owner: "Ravi Iyer",
+  valid_from: "2026-10-17",
+  valid_to: null,
+  history: [
+    { engineer: "Asha Menon", valid_from: "2025-11-01", valid_to: "2026-10-16" },
+    { engineer: "Ravi Iyer", valid_from: "2026-10-17", valid_to: null },
+  ],
+};
+
+export const ownerJuly: OwnerResponse = { ...ownerAfterReassign, date: "2026-07-15", owner: "Asha Menon", valid_from: "2025-11-01", valid_to: "2026-10-16" };
+
+export const reassigned: ReassignResponse = {
+  ...ownerAfterReassign,
+  superseded: { engineer: "Asha Menon", valid_from: "2025-11-01", valid_to: "2026-10-16" },
+};

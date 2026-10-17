@@ -9,6 +9,7 @@ import {
   detail045,
   inc037,
   inc045,
+  ownerNow,
   outcomeFailed,
   timeline037,
   timeline045,
@@ -25,6 +26,8 @@ vi.mock("./api/client", () => ({
     chat: vi.fn(),
     wipeSession: vi.fn(),
     resetDemo: vi.fn(),
+    owner: vi.fn(),
+    reassign: vi.fn(),
   },
 }));
 const m = vi.mocked(api);
@@ -41,6 +44,7 @@ beforeEach(() => {
   m.incident.mockImplementation(async (id) => (id === "INC-045" ? detail045 : detail037));
   m.timeline.mockImplementation(async (id) => (id === "INC-045" ? timeline045 : timeline037));
   m.wipeSession.mockResolvedValue({ session_id: "x", wiped: true });
+  m.owner.mockResolvedValue(ownerNow);
 });
 
 describe("startup and layout", () => {
@@ -261,6 +265,38 @@ describe("chat driving the rest of the app", () => {
     await user.click(screen.getByRole("button", { name: "The restart failed" }));
     await screen.findByText("stress test reply");
     expect(screen.getByRole("tab", { name: "Stress Test" })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("ownership", () => {
+  it("re-runs the owner lookup and refreshes the catalog when the backend's chat reply made a reassign tool call", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await waitFor(() => expect(m.owner).toHaveBeenCalledTimes(1));
+    expect(m.catalog).toHaveBeenCalledTimes(1); // one shared catalog request for both panels
+
+    m.chat.mockResolvedValueOnce({
+      ...chatAlert,
+      intent: "reassign",
+      incident_id: null,
+      tool_calls: [{ name: "reassign", args: { service: "payments-api", engineer: "Ravi Iyer" }, summary: "Ravi Iyer now owns payments-api" }],
+    });
+    await user.click(screen.getByRole("button", { name: "It's back" }));
+
+    await waitFor(() => expect(m.owner).toHaveBeenCalledTimes(2));
+    expect(m.catalog).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not refresh ownership for replies without a reassign tool call, even if the text mentions ownership", async () => {
+    const user = userEvent.setup();
+    m.chat.mockResolvedValueOnce({ ...chatAlert, reply: "payments-api is now owned by Ravi", tool_calls: [] });
+    render(<App />);
+    await waitFor(() => expect(m.owner).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByRole("button", { name: "It's back" }));
+    await screen.findByText("payments-api is now owned by Ravi");
+
+    expect(m.owner).toHaveBeenCalledTimes(1);
   });
 });
 

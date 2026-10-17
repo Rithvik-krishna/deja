@@ -4,13 +4,15 @@ interface ConfirmDialogProps {
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  /** "danger" for destructive actions (default), "primary" for ordinary confirmations. */
+  confirmTone?: "danger" | "primary";
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 /** Modal confirmation. Focus starts on Cancel (the safe choice), Tab cycles inside the dialog, Esc cancels, focus returns on close. */
-export function ConfirmDialog({ title, children, confirmLabel, busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, children, confirmLabel, confirmTone = "danger", busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
   const titleId = useId();
   const bodyId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +52,7 @@ export function ConfirmDialog({ title, children, confirmLabel, busy = false, onC
           <button type="button" className="btn" ref={cancelRef} onClick={onCancel} disabled={busy}>
             Cancel
           </button>
-          <button type="button" className="btn btn-danger" ref={confirmRef} onClick={onConfirm} disabled={busy}>
+          <button type="button" className={`btn ${confirmTone === "danger" ? "btn-danger" : "btn-primary"}`} ref={confirmRef} onClick={onConfirm} disabled={busy}>
             {busy ? "Working…" : confirmLabel}
           </button>
         </div>

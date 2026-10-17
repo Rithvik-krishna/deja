@@ -2,6 +2,7 @@ import { useCallback, useReducer, useRef, useState } from "react";
 import { api, type ChatResponse, type GraphPayload } from "./api/client";
 import { Chat } from "./components/Chat";
 import { IncidentPanel } from "./components/IncidentPanel";
+import { OwnersPanel } from "./components/OwnersPanel";
 import { GraphPlaceholder } from "./components/placeholders/GraphPlaceholder";
 import { TabPlaceholder } from "./components/placeholders/TabPlaceholder";
 import { panelId, tabId, Tabs, type TabDef } from "./components/Tabs";
@@ -34,7 +35,12 @@ export default function App() {
   const [incidentRefresh, setIncidentRefresh] = useState(0);
   const [busy, setBusy] = useState<BusyAction>(null);
   const { toasts, notify, dismiss } = useToasts();
+  // Bumped when ownership changes outside OwnersPanel (a chat reassignment), so its lookup is re-run.
+  const [ownersRefresh, setOwnersRefresh] = useState(0);
   const health = useAsync(() => api.health(), "health");
+  // One /catalog request shared by the Incident (fix options) and Owners (services, engineers) panels.
+  const catalog = useAsync(() => api.catalog(), "catalog");
+  const reloadCatalog = catalog.reload;
   // The badge only reflects the last /health check, so re-check when a request fails, and again on the first success after an outage.
   const healthRef = useRef(health);
   healthRef.current = health;
@@ -45,7 +51,12 @@ export default function App() {
     if (res.incident_id) setSelectedIncidentId(res.incident_id);
     if (res.incident_id || res.tool_calls.length > 0) setIncidentRefresh((n) => n + 1);
     if (res.intent === STRESS_TEST_INTENT) setActiveTab("stress");
-  }, []);
+    // Decided from what the backend actually did (its tool calls), not from the user's wording.
+    if (res.tool_calls.some((t) => t.name === "reassign")) {
+      setOwnersRefresh((n) => n + 1);
+      reloadCatalog();
+    }
+  }, [reloadCatalog]);
 
   const openIncident = useCallback((id: string) => {
     setSelectedIncidentId(id);
@@ -77,6 +88,8 @@ export default function App() {
       setGraph(null);
       setSelectedIncidentId(null);
       setIncidentRefresh((n) => n + 1);
+      setOwnersRefresh((n) => n + 1);
+      reloadCatalog();
       health.reload();
       notify("success", "Demo data reset to the seed.");
     } catch (e) {
@@ -137,6 +150,7 @@ export default function App() {
               refreshToken={incidentRefresh}
               onGraphChange={setGraph}
               onNotify={notify}
+              catalog={catalog}
             />
           </div>
           <div {...panel("stress")}>
@@ -146,9 +160,7 @@ export default function App() {
             </TabPlaceholder>
           </div>
           <div {...panel("owners")}>
-            <TabPlaceholder title="Owners" status="Phase 2">
-              Ownership time travel and reassignment come in Phase 2.
-            </TabPlaceholder>
+            <OwnersPanel catalog={catalog} refreshToken={ownersRefresh} onNotify={notify} />
           </div>
         </aside>
       </main>
