@@ -152,8 +152,8 @@ export default function App() {
           <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} label="Details" />
           {/* All panels stay mounted (hidden, not unmounted) so switching tabs keeps their state. */}
           <div {...panel("risk")}>
-            <TabPlaceholder title="Risk map" status="Waiting on RiskPanel (Rithvik)">
-              The risk table and blast-radius view are owned by the graph work and are not part of Phase 1.
+            <TabPlaceholder title="Risk map" status="Not available in this build">
+              The risk table and blast-radius view aren't included yet. No risk data is shown here.
             </TabPlaceholder>
           </div>
           <div {...panel("incident")}>

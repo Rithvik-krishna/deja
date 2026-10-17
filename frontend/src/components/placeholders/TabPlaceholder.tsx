@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Explicit "not built yet" panel for right-hand tabs outside Phase 1. Shows no data and offers no controls. */
+/** Explicit "not built yet" panel for right-hand tabs whose feature is not available in this build. Shows no data and offers no controls. */
 export function TabPlaceholder({ title, status, children }: { title: string; status: string; children?: ReactNode }) {
   return (
     <div className="tab-placeholder">

@@ -118,6 +118,20 @@ describe("startup and layout", () => {
     expect(await screen.findByText("MOCK · in-memory data")).toBeInTheDocument();
   });
 
+  it("shows an honest unavailable state on the Risk tab: no stale wording, no data", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("tab", { name: "Risk" }));
+
+    const panel = within(screen.getByRole("tabpanel", { name: "Risk" }));
+    expect(panel.getByRole("heading", { name: "Risk map" })).toBeInTheDocument();
+    expect(panel.getByText("Not available in this build")).toBeInTheDocument();
+    expect(panel.getByText(/No risk data is shown here/)).toBeInTheDocument();
+    expect(panel.queryByText(/Phase 1/)).not.toBeInTheDocument();
+    expect(panel.queryAllByRole("button")).toHaveLength(0); // nothing that pretends to work
+    expect(panel.queryByRole("table")).not.toBeInTheDocument();
+  });
+
   it("keeps non-active tab panels mounted so their state survives switching tabs", async () => {
     const user = userEvent.setup();
     render(<App />);
