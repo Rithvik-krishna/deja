@@ -300,6 +300,127 @@ describe("E: before / after labelling and honesty", () => {
   });
 });
 
+describe("E2: comparison values come from the response, never invented", () => {
+  const host = () => document.querySelector(".shockviz-host");
+
+  it("shows ShockViz's rank change, before/after scores and delta from the response's own fields", async () => {
+    const user = userEvent.setup();
+    m.evidenceShock.mockResolvedValue(shockInconclusive);
+    render(<Host />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(runBtn());
+    await screen.findByRole("region", { name: "Result (after removal)" });
+
+    const text = host()?.textContent ?? "";
+    expect(text).toContain("#1 → #2"); // payments-api: rank_before 1 -> rank_after 2
+    expect(text).toContain("#2 → #1"); // inventory
+    expect(text).toContain("5.5"); // payments-api score_before
+    expect(text).toContain("3.5"); // score_after
+    expect(text).toContain("-2.0"); // delta
+  });
+
+  it("draws no comparison when the backend omitted before/after values, and says which services lack them", async () => {
+    const user = userEvent.setup();
+    const [first, ...rest] = shockInconclusive.hypotheses;
+    m.evidenceShock.mockResolvedValue({
+      ...shockInconclusive,
+      hypotheses: [{ ...first, score_before: null, rank_before: null }, ...rest],
+    });
+    render(<Host />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(runBtn());
+
+    const result = within(await screen.findByRole("region", { name: "Result (after removal)" }));
+    expect(result.getByText(/no before\/after values for inventory, so no comparison is drawn/)).toBeInTheDocument();
+    expect(host()).toBeNull(); // ShockViz would have shown the post-shock score as the baseline
+    expect(result.getByText(/#1/)).toBeInTheDocument(); // only the post-shock ranking, as returned
+    expect(result.queryByText(/→ #/)).not.toBeInTheDocument();
+    expect(result.getByText("INCONCLUSIVE")).toBeInTheDocument(); // verdict still shown
+  });
+});
+
+describe("ShockViz chips and result visibility", () => {
+  it("a critical-channel chip only selects the source (nothing sent) and tells the user", async () => {
+    const user = userEvent.setup();
+    m.evidenceShock.mockResolvedValue(shockInconclusive);
+    const onNotify = vi.fn();
+    render(<Host onNotify={onNotify} />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(runBtn());
+    await screen.findByRole("region", { name: "Result (after removal)" });
+    await user.click(box("Remove entire source: Historical incidents")); // deselect
+    onNotify.mockClear();
+    m.evidenceShock.mockClear();
+
+    const chip = within(document.querySelector(".shockviz-host") as HTMLElement).getByRole("button", { name: /incident-history/ });
+    await user.click(chip);
+
+    expect(box("Remove entire source: Historical incidents")).toBeChecked();
+    expect(onNotify).toHaveBeenCalledWith("info", "Historical incidents selected for removal. Press Run shock to test it.");
+    expect(m.evidenceShock).not.toHaveBeenCalled();
+  });
+
+  it("explains Auto-shock in visible text and scrolls a new result into view", async () => {
+    const user = userEvent.setup();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    m.evidenceShock.mockResolvedValue(shockInconclusive);
+    render(<Host />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(screen.getByText(/Auto-shock removes the evidence source the backend ranks most critical/)).toBeInTheDocument();
+
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(runBtn());
+    await screen.findByRole("region", { name: "Result (after removal)" });
+    expect(scroll).toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("sends both evidence ids and sources when both are selected, and disables Reset while running", async () => {
+    const user = userEvent.setup();
+    const pending = deferred<EvidenceShockResponse>();
+    m.evidenceShock.mockReturnValue(pending.promise);
+    render(<Host />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(box("Recent deploy on inventory: v4.8.0 by Kiran Rao"));
+    await user.click(runBtn());
+
+    expect(m.evidenceShock).toHaveBeenCalledExactlyOnceWith({
+      incident_id: "INC-045",
+      remove_evidence_ids: ["ev:deploy:inventory"],
+      remove_sources: ["incident-history"],
+    });
+    expect(screen.getByRole("button", { name: "Reset shocks" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Auto-shock" })).toBeDisabled();
+    expect(box("Recent deploy on inventory: v4.8.0 by Kiran Rao")).toBeDisabled(); // selection frozen mid-run
+    pending.resolve(shockInconclusive);
+    await screen.findByRole("region", { name: "Result (after removal)" });
+    expect(screen.getByRole("button", { name: "Reset shocks" })).toBeEnabled();
+  });
+
+  it("lists history newest first with the backend's recommendation", async () => {
+    const user = userEvent.setup();
+    m.evidenceShock.mockResolvedValueOnce(shockInconclusive).mockResolvedValueOnce(shockRobustNoGraph);
+    render(<Host />);
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    await user.click(box("Remove entire source: Historical incidents"));
+    await user.click(runBtn());
+    await screen.findByText("Run 1");
+    await user.click(runBtn());
+    await screen.findByText("Run 2");
+
+    const hist = within(screen.getByRole("region", { name: /Shock history/ })).getAllByRole("listitem");
+    expect(hist[0]).toHaveTextContent("Run 2");
+    expect(hist[0]).toHaveTextContent("ROBUST");
+    expect(hist[1]).toHaveTextContent("Run 1");
+    expect(hist[1]).toHaveTextContent("Verify incident-history before remediating");
+  });
+});
+
 describe("F: reset shocks", () => {
   it("clears the selection and result, reloads the baseline, restores its graph, and keeps history", async () => {
     const user = userEvent.setup();

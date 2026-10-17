@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { api, type Catalog } from "../api/client";
 import type { AsyncState } from "../state/useAsync";
-import { catalog, ownerAfterReassign, ownerJuly, ownerNow, reassigned } from "../test/fixtures";
+import { catalog, deferred, ownerAfterReassign, ownerJuly, ownerNow, reassigned } from "../test/fixtures";
 import { OwnersPanel } from "./OwnersPanel";
 
 vi.mock("../api/client", () => ({ api: { owner: vi.fn(), reassign: vi.fn() } }));
@@ -86,6 +86,93 @@ describe("OwnersPanel lookup", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(reload).toHaveBeenCalled();
     expect(m.owner).not.toHaveBeenCalled();
+  });
+});
+
+describe("OwnersPanel service selection and the demo sequence", () => {
+  const twoServices = {
+    ...catalog,
+    services: [
+      { name: "admin-portal", tier: "tier-3", team: "platform", owner: "Dev Patel" },
+      { name: "payments-api", tier: "tier-2", team: "payments-platform", owner: "Asha Menon" },
+    ],
+  };
+
+  it("queries the service the user picks, and the reassign form follows it", async () => {
+    const user = userEvent.setup();
+    m.owner.mockImplementation(async (service) => ({ ...ownerNow, service, owner: service === "admin-portal" ? "Dev Patel" : "Asha Menon" }));
+    setup({ data: twoServices });
+    await screen.findByText("Dev Patel", { selector: "strong" }); // default = first catalog service
+    expect(m.owner).toHaveBeenLastCalledWith("admin-portal", undefined);
+    expect(screen.getByRole("heading", { name: "Reassign admin-portal" })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Service"), "payments-api");
+
+    expect(await screen.findByText("Asha Menon", { selector: "strong" })).toBeInTheDocument();
+    expect(m.owner).toHaveBeenLastCalledWith("payments-api", undefined);
+    expect(screen.getByRole("heading", { name: "Reassign payments-api" })).toBeInTheDocument();
+  });
+
+  it("payments-api -> reassign to Ravi -> who owned it in July? shows the owner the API returns for July, not the new one", async () => {
+    const user = userEvent.setup();
+    let reassignedYet = false;
+    m.owner.mockImplementation(async (service, date) => {
+      if (date === "2026-07-15") return ownerJuly; // the backend's historical answer
+      return reassignedYet ? ownerAfterReassign : ownerNow;
+    });
+    m.reassign.mockImplementation(async () => {
+      reassignedYet = true;
+      return reassigned;
+    });
+    const { onNotify } = setup({ data: twoServices });
+    await screen.findByText("Dev Patel", { selector: "strong" }).catch(() => undefined);
+    await user.selectOptions(screen.getByLabelText("Service"), "payments-api");
+    await screen.findByText("Asha Menon", { selector: "strong.owner-name" });
+
+    await user.selectOptions(screen.getByLabelText("New owner"), "ravi-iyer");
+    await user.click(screen.getByRole("button", { name: "Reassign…" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Reassign" }));
+    expect(await screen.findByText("Ravi Iyer", { selector: "strong.owner-name" })).toBeInTheDocument();
+    expect(m.reassign).toHaveBeenCalledExactlyOnceWith("payments-api", "ravi-iyer", undefined);
+    expect(onNotify).toHaveBeenCalledWith("success", "Reassigned payments-api to Ravi Iyer.");
+
+    fireEvent.change(screen.getByLabelText("As of date"), { target: { value: "2026-07-15" } });
+
+    expect(await screen.findByText("payments-api on 2026-07-15")).toBeInTheDocument();
+    expect(screen.getByText("Asha Menon", { selector: "strong.owner-name" })).toBeInTheDocument();
+    expect(m.owner).toHaveBeenLastCalledWith("payments-api", "2026-07-15");
+    const items = within(screen.getByRole("region", { name: "Ownership history" })).getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Asha Menon");
+    expect(items[0]).toHaveTextContent("Owner on selected date");
+    expect(items[1]).toHaveTextContent("Ravi Iyer");
+    expect(items[1]).not.toHaveTextContent("Owner on selected date");
+  });
+
+  it("shows a loading state for the lookup", async () => {
+    const pending = deferred<typeof ownerNow>();
+    m.owner.mockReturnValue(pending.promise);
+    setup();
+    expect(await screen.findByText("Looking up owner…")).toBeInTheDocument();
+    pending.resolve(ownerNow);
+    expect(await screen.findByText("Asha Menon", { selector: "strong" })).toBeInTheDocument();
+    expect(screen.queryByText("Looking up owner…")).not.toBeInTheDocument();
+  });
+
+  it("sends only one reassignment even if the confirm button is hit repeatedly", async () => {
+    const user = userEvent.setup();
+    const pending = deferred<typeof reassigned>();
+    m.reassign.mockReturnValue(pending.promise);
+    setup();
+    await screen.findByText("Asha Menon", { selector: "strong" });
+    await user.selectOptions(screen.getByLabelText("New owner"), "ravi-iyer");
+    await user.click(screen.getByRole("button", { name: "Reassign…" }));
+    const confirm = within(screen.getByRole("dialog")).getByRole("button", { name: /Reassign|Working/ });
+    await user.click(confirm);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: /Working/ }));
+
+    expect(m.reassign).toHaveBeenCalledTimes(1);
+    pending.resolve(reassigned);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });
 

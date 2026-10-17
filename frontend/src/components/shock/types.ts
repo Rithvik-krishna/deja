@@ -36,3 +36,13 @@ export function removedEvidenceIds(r: EvidenceShockResponse | null): Set<string>
   r?.hypotheses.forEach((h) => h.evidence?.forEach((e) => e.removed && out.add(e.id)));
   return out;
 }
+
+/**
+ * Services whose before/after values the backend did not supply. The comparison is only drawn when this is empty,
+ * so a missing baseline is never replaced by the post-shock value.
+ */
+export function comparisonGaps(r: EvidenceShockResponse): string[] {
+  return r.hypotheses
+    .filter((h) => h.score_before == null || h.score_after == null || h.rank_before == null || h.rank_after == null)
+    .map((h) => h.service);
+}

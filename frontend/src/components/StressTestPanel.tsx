@@ -7,7 +7,7 @@ import ShockViz from "./ShockViz";
 import { EvidenceInventory } from "./shock/EvidenceInventory";
 import { ShockHistory } from "./shock/ShockHistory";
 import { ShockSummary } from "./shock/ShockSummary";
-import { hasGraph, removedEvidenceIds, type ShockRun } from "./shock/types";
+import { comparisonGaps, hasGraph, removedEvidenceIds, sourceLabel, type ShockRun } from "./shock/types";
 
 /** Required wording; shown verbatim. */
 const SCORING_NOTE =
@@ -83,6 +83,7 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
   const inflight = useRef(false);
   const alive = useRef(true);
   const pushBaselineGraph = useRef(false);
+  const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     alive.current = true;
@@ -100,6 +101,11 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
   }, [hyp.data, hyp.loading, onGraphChange]);
 
   const result = shock && shock.incident_id === incidentId ? shock : null;
+
+  // A new result is the point of the action: bring it into view instead of leaving it at the panel's edge.
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView?.({ block: "start" });
+  }, [result]);
   const removedIds = removedEvidenceIds(result);
   const sourceImpact = new Map((result?.critical_sources ?? []).map((s) => [s.source, s.impact_score]));
   const selectionCount = selectedIds.size + selectedSources.size;
@@ -163,6 +169,14 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
     });
   }
 
+  /** ShockViz's "critical channel" chips only select a source (nothing is sent); say so, since the inventory may be off-screen. */
+  function chooseSource(src: string) {
+    if (busy) return;
+    const adding = !selectedSources.has(src);
+    setSelectedSources((s) => toggle(s, src));
+    onNotify("info", adding ? `${sourceLabel(src)} selected for removal. Press Run shock to test it.` : `${sourceLabel(src)} deselected.`);
+  }
+
   function reset() {
     setSelectedIds(new Set());
     setSelectedSources(new Set());
@@ -173,6 +187,7 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
   }
 
   const busy = running !== null;
+  const gaps = result ? comparisonGaps(result) : [];
   const ranked = [...(hyp.data?.hypotheses ?? [])].sort((a, b) => a.rank - b.rank);
 
   return (
@@ -239,13 +254,14 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
               <button type="button" className="btn btn-primary" disabled={busy || selectionCount === 0} onClick={runManual}>
                 {running === "manual" ? "Running…" : "Run shock"}
               </button>
-              <button type="button" className="btn" disabled={busy} onClick={runAuto} title="Removes the evidence source the backend ranks most critical">
+              <button type="button" className="btn" disabled={busy} onClick={runAuto}>
                 {running === "auto" ? "Auto-shocking…" : "Auto-shock"}
               </button>
               <button type="button" className="btn" disabled={busy} onClick={reset}>
                 Reset shocks
               </button>
             </div>
+            <p className="hint">Auto-shock removes the evidence source the backend ranks most critical (by its own F(e) impact score).</p>
             {runError && (
               <div className="state state-error" role="alert">
                 <p>
@@ -261,14 +277,36 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
       )}
 
       {result && (
-        <section className="section" aria-labelledby={`${uid}-res`}>
+        <section className="section" aria-labelledby={`${uid}-res`} ref={resultRef}>
           <h4 id={`${uid}-res`} className="subhead">
             Result (after removal)
           </h4>
           <ShockSummary shock={result} />
-          <div className="shockviz-host">
-            <ShockViz shock={result} onSelectSource={(src) => !busy && setSelectedSources((s) => toggle(s, src))} />
-          </div>
+          {gaps.length > 0 ? (
+            // ShockViz would silently use the post-shock value as the baseline when before-values are missing.
+            // Show only what the backend actually sent rather than an invented comparison.
+            <div className="state" role="status">
+              <p>
+                The backend response has no before/after values for {gaps.join(", ")}, so no comparison is drawn. Post-shock ranking as
+                returned:
+              </p>
+              <ol className="hyp-list">
+                {[...result.hypotheses]
+                  .sort((a, b) => a.rank - b.rank)
+                  .map((h) => (
+                    <li key={h.service}>
+                      <span className="hyp-rank">#{h.rank}</span>
+                      <strong>{h.service}</strong>
+                      <span className="row-meta">score {h.score}</span>
+                    </li>
+                  ))}
+              </ol>
+            </div>
+          ) : (
+            <div className="shockviz-host">
+              <ShockViz shock={result} onSelectSource={chooseSource} />
+            </div>
+          )}
         </section>
       )}
 

@@ -311,6 +311,33 @@ describe("evidence shock wiring", () => {
   });
 });
 
+describe("evidence shock and demo reset", () => {
+  it("drops the incident, its result and its graph when the demo is reset", async () => {
+    const user = userEvent.setup();
+    m.evidenceShock.mockResolvedValue(shockInconclusive);
+    m.resetDemo.mockResolvedValue({ ok: true, counts: {} });
+    render(<App />);
+    await user.click(await within(incidentsRegion()).findByRole("button", { name: /INC-045/ }));
+    await user.click(screen.getByRole("tab", { name: "Stress Test" }));
+    await user.click(await screen.findByRole("checkbox", { name: "Remove entire source: Historical incidents" }));
+    await user.click(screen.getByRole("button", { name: "Run shock" }));
+    await screen.findByRole("region", { name: "Result (after removal)" });
+
+    await user.click(screen.getByRole("button", { name: "Reset demo" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Reset demo data" }));
+
+    expect(await screen.findByText(/Select an incident \(in the Incident tab/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Result (after removal)" })).not.toBeInTheDocument();
+    expect(graphTotals()).toBeNull();
+    // Re-selecting the same incident afterwards must not resurrect the old result.
+    await user.click(screen.getByRole("tab", { name: "Incident" }));
+    await user.click(await within(incidentsRegion()).findByRole("button", { name: /INC-045/ }));
+    await user.click(screen.getByRole("tab", { name: "Stress Test" }));
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(screen.queryByRole("region", { name: "Result (after removal)" })).not.toBeInTheDocument();
+  });
+});
+
 describe("ownership", () => {
   it("re-runs the owner lookup and refreshes the catalog when the backend's chat reply made a reassign tool call", async () => {
     const user = userEvent.setup();
