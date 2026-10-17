@@ -11,9 +11,11 @@ const m = vi.mocked(api);
 function setup(over: Partial<AsyncState<Catalog>> = {}) {
   const reload = vi.fn();
   const onNotify = vi.fn();
-  const state: AsyncState<Catalog> = { data: catalog, error: null, loading: false, reload, ...over };
-  render(<OwnersPanel catalog={state} refreshToken={0} onNotify={onNotify} />);
-  return { reload, onNotify };
+  const state: AsyncState<Catalog> = { data: catalog, error: null, loading: false, settled: 1, reload, ...over };
+  const view = render(<OwnersPanel catalog={state} refreshToken={0} onNotify={onNotify} />);
+  const focus = (focusService: { service: string; seq: number } | null) =>
+    view.rerender(<OwnersPanel catalog={state} refreshToken={0} onNotify={onNotify} focusService={focusService} />);
+  return { reload, onNotify, focus };
 }
 
 beforeEach(() => {
@@ -173,6 +175,44 @@ describe("OwnersPanel service selection and the demo sequence", () => {
     expect(m.reassign).toHaveBeenCalledTimes(1);
     pending.resolve(reassigned);
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+});
+
+describe("OwnersPanel focusService (set from a chat reassignment's tool call)", () => {
+  const twoServices = {
+    ...catalog,
+    services: [
+      { name: "admin-portal", tier: "tier-3", team: "platform", owner: "Dev Patel" },
+      { name: "payments-api", tier: "tier-2", team: "payments-platform", owner: "Asha Menon" },
+    ],
+  };
+
+  it("switches to the focused service and queries it, and honours a repeat request after the user chose another", async () => {
+    const user = userEvent.setup();
+    m.owner.mockImplementation(async (service) => ({ ...ownerNow, service }));
+    const { focus } = setup({ data: twoServices });
+    await screen.findByText("payments-api on 2026-10-17").catch(() => undefined);
+    expect(m.owner).toHaveBeenLastCalledWith("admin-portal", undefined);
+
+    focus({ service: "payments-api", seq: 1 });
+    await waitFor(() => expect(m.owner).toHaveBeenLastCalledWith("payments-api", undefined));
+    expect(screen.getByRole("heading", { name: "Reassign payments-api" })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Service"), "admin-portal");
+    await waitFor(() => expect(m.owner).toHaveBeenLastCalledWith("admin-portal", undefined));
+
+    focus({ service: "payments-api", seq: 2 }); // same service again, new request
+    await waitFor(() => expect(m.owner).toHaveBeenLastCalledWith("payments-api", undefined));
+  });
+
+  it("ignores a service the catalog does not contain", async () => {
+    m.owner.mockImplementation(async (service) => ({ ...ownerNow, service }));
+    const { focus } = setup({ data: twoServices });
+    await waitFor(() => expect(m.owner).toHaveBeenCalledWith("admin-portal", undefined));
+    focus({ service: "not-a-service", seq: 1 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(m.owner).not.toHaveBeenCalledWith("not-a-service", undefined);
+    expect(screen.getByLabelText("Service")).toHaveValue("admin-portal");
   });
 });
 
