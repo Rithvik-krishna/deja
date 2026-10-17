@@ -1,10 +1,11 @@
 import { useCallback, useReducer, useRef, useState } from "react";
-import { api, type ChatResponse, type GraphPayload } from "./api/client";
+import { api, type ChatResponse, type EvidenceShockResponse, type GraphPayload } from "./api/client";
 import { Chat } from "./components/Chat";
 import { IncidentPanel } from "./components/IncidentPanel";
 import { OwnersPanel } from "./components/OwnersPanel";
-import { GraphPlaceholder } from "./components/placeholders/GraphPlaceholder";
+import GraphView from "./components/GraphView";
 import { TabPlaceholder } from "./components/placeholders/TabPlaceholder";
+import { StressTestPanel } from "./components/StressTestPanel";
 import { panelId, tabId, Tabs, type TabDef } from "./components/Tabs";
 import { ToastViewport } from "./components/Toast";
 import { TopBar, type BusyAction } from "./components/TopBar";
@@ -33,6 +34,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<RightTab>("incident");
   // Bumped whenever something outside IncidentPanel may have changed incident data.
   const [incidentRefresh, setIncidentRefresh] = useState(0);
+  // Latest Evidence Shock result, tagged with its incident so it can never be shown for another one.
+  const [shock, setShock] = useState<{ incidentId: string; result: EvidenceShockResponse } | null>(null);
   const [busy, setBusy] = useState<BusyAction>(null);
   const { toasts, notify, dismiss } = useToasts();
   // Bumped when ownership changes outside OwnersPanel (a chat reassignment), so its lookup is re-run.
@@ -86,6 +89,7 @@ export default function App() {
       dispatch({ type: "cleared" });
       setSessionId(newSessionId());
       setGraph(null);
+      setShock(null);
       setSelectedIncidentId(null);
       setIncidentRefresh((n) => n + 1);
       setOwnersRefresh((n) => n + 1);
@@ -131,8 +135,17 @@ export default function App() {
         </section>
 
         <section className="pane pane-graph" aria-label="Graph">
-          {/* Swap point: replace with Rithvik's GraphView once it exists (see GraphPlaceholder.tsx). */}
-          <GraphPlaceholder graph={graph} />
+          <h2 className="pane-title">Incident graph</h2>
+          <div className="graph-host">
+            {graph ? (
+              <GraphView payload={graph} />
+            ) : (
+              <div className="state graph-empty">
+                <p>No graph yet.</p>
+                <p>Send an alert in chat or pick an incident, and the graph the backend returns will appear here.</p>
+              </div>
+            )}
+          </div>
         </section>
 
         <aside className="pane pane-side" aria-label="Details">
@@ -154,10 +167,14 @@ export default function App() {
             />
           </div>
           <div {...panel("stress")}>
-            <TabPlaceholder title="Stress Test" status="Phase 2">
-              The Evidence Shock interaction comes in Phase 2. It also needs client methods that don't exist in{" "}
-              <code>api/client.ts</code> yet.
-            </TabPlaceholder>
+            <StressTestPanel
+              incidentId={selectedIncidentId}
+              active={activeTab === "stress"}
+              shock={shock && shock.incidentId === selectedIncidentId ? shock.result : null}
+              onShockResult={(incidentId, result) => setShock(result ? { incidentId, result } : null)}
+              onGraphChange={setGraph}
+              onNotify={notify}
+            />
           </div>
           <div {...panel("owners")}>
             <OwnersPanel catalog={catalog} refreshToken={ownersRefresh} onNotify={notify} />

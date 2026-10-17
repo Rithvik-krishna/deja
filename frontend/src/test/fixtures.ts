@@ -1,7 +1,7 @@
 // Fixtures typed against the real contract types (so a contract change breaks the tests at compile time).
 // Shapes and values mirror contract/examples/*.json.
 import type { ChatResponse, GraphPayload, IncidentDetail, IncidentSummary, OutcomeResponse, TimelineEvent } from "../api/client";
-import type { Catalog, OwnerResponse, ReassignResponse } from "../api/client";
+import type { Catalog, EvidenceShockResponse, HypothesisResponse, OwnerResponse, ReassignResponse } from "../api/client";
 
 export const graphA: GraphPayload = {
   nodes: [
@@ -147,3 +147,87 @@ export const reassigned: ReassignResponse = {
   ...ownerAfterReassign,
   superseded: { engineer: "Asha Menon", valid_from: "2025-11-01", valid_to: "2026-10-16" },
 };
+
+// ---- Evidence Shock fixtures (synthetic, shaped like contract/examples and the backend's EvidenceProvider output) ----
+type Hyp = HypothesisResponse["hypotheses"][number];
+type Ev = NonNullable<Hyp["evidence"]>[number];
+const ev = (id: string, kind: Ev["kind"], source: Ev["source"], weight: number, owner_service: string, label: string, removed = false): Ev => ({
+  id, kind, source, weight, owner_service, label, removed, node_ids: [],
+});
+const paymentsEv = (removedHistory: boolean): Ev[] => [
+  ev("ev:topology:payments-api", "topology", "service-topology", 0.5, "payments-api", "Upstream dependency: payments-api (1 hops)"),
+  ev("ev:deploy:payments-api", "deploy", "cicd-deploy-log", 3, "payments-api", "Recent deploy on payments-api: v2.3.1 by Asha Menon"),
+  ev("ev:history:INC-042", "history", "incident-history", 1, "payments-api", "Past incident INC-042 (payments-api latency)", removedHistory),
+  ev("ev:history:INC-028", "history", "incident-history", 1, "payments-api", "Past incident INC-028 (payments-api latency)", removedHistory),
+];
+const inventoryEv = (removedHistory: boolean): Ev[] => [
+  ev("ev:topology:inventory", "topology", "service-topology", 0.5, "inventory", "Upstream dependency: inventory (1 hops)"),
+  ev("ev:deploy:inventory", "deploy", "cicd-deploy-log", 3, "inventory", "Recent deploy on inventory: v4.8.0 by Kiran Rao"),
+  ev("ev:history:INC-044", "history", "incident-history", 1, "inventory", "Past incident INC-044 (inventory latency)", removedHistory),
+];
+
+export const evidenceGraph: GraphPayload = {
+  nodes: [
+    { id: "svc:payments-api", label: "Service", name: "payments-api", props: {}, highlight: true, score: 5.5 },
+    { id: "ev:deploy:payments-api", label: "Evidence", name: "Recent deploy", props: {}, highlight: false, score: null },
+  ],
+  edges: [{ id: "ev:deploy:payments-api->SUPPORTS->svc:payments-api", source: "ev:deploy:payments-api", target: "svc:payments-api", type: "SUPPORTS", props: {}, highlight: true }],
+};
+
+export const hypBaseline: HypothesisResponse = {
+  incident_id: "INC-045",
+  service: "checkout",
+  symptom: "latency",
+  hypotheses: [
+    { service: "payments-api", hops: 1, score: 5.5, rank: 1, owner: "Asha Menon", evidence: paymentsEv(false) },
+    { service: "inventory", hops: 1, score: 4.5, rank: 2, owner: "Kiran Rao", evidence: inventoryEv(false) },
+    { service: "checkout", hops: 0, score: 1, rank: 3, owner: "Sana Khan", evidence: [] },
+  ],
+  graph: evidenceGraph,
+};
+
+export const shockGraph: GraphPayload = {
+  nodes: [{ id: "svc:inventory", label: "Service", name: "inventory", props: {}, highlight: true, score: 3.5 }],
+  edges: [],
+};
+
+/** Removing the whole incident-history source ties the top two hypotheses -> inconclusive. */
+export const shockInconclusive: EvidenceShockResponse = {
+  incident_id: "INC-045",
+  service: "checkout",
+  symptom: "latency",
+  verdict: "inconclusive",
+  margin_before: 1,
+  margin_after: 0,
+  top_suspect_before: "payments-api",
+  top_suspect_after: "inventory",
+  hypotheses: [
+    { service: "inventory", hops: 1, score: 3.5, rank: 1, owner: "Kiran Rao", score_before: 4.5, score_after: 3.5, rank_before: 2, rank_after: 1, evidence: inventoryEv(true) },
+    { service: "payments-api", hops: 1, score: 3.5, rank: 2, owner: "Asha Menon", score_before: 5.5, score_after: 3.5, rank_before: 1, rank_after: 2, evidence: paymentsEv(true) },
+    { service: "checkout", hops: 0, score: 0, rank: 3, owner: "Sana Khan", score_before: 1, score_after: 0, rank_before: 3, rank_after: 3, evidence: [] },
+  ],
+  critical_evidence: [{ evidence_id: "ev:deploy:payments-api", kind: "deploy", source: "cicd-deploy-log", owner_service: "payments-api", label: "Recent deploy on payments-api", impact_score: 1.42 }],
+  critical_sources: [
+    { source: "incident-history", impact_score: 1.89, evidence_count: 3 },
+    { source: "cicd-deploy-log", impact_score: 1.42, evidence_count: 2 },
+    { source: "service-topology", impact_score: 0.74, evidence_count: 3 },
+  ],
+  recommendation: "Diagnosis is INCONCLUSIVE: candidates are tied. Verify incident-history before remediating.",
+  graph: shockGraph,
+};
+
+/** Baseline analysis with nothing removed (what the backend returns for a request without removals). */
+export const shockProbe: EvidenceShockResponse = {
+  ...shockInconclusive,
+  verdict: "robust",
+  margin_after: 1,
+  top_suspect_after: "payments-api",
+  hypotheses: [
+    { service: "payments-api", hops: 1, score: 5.5, rank: 1, owner: "Asha Menon", score_before: 5.5, score_after: 5.5, rank_before: 1, rank_after: 1, evidence: paymentsEv(false) },
+    { service: "inventory", hops: 1, score: 4.5, rank: 2, owner: "Kiran Rao", score_before: 4.5, score_after: 4.5, rank_before: 2, rank_after: 2, evidence: inventoryEv(false) },
+  ],
+  recommendation: "Diagnosis is ROBUST: payments-api holds as the leading hypothesis.",
+};
+
+/** Removing only the deploy evidence: robust, and no graph payload. */
+export const shockRobustNoGraph: EvidenceShockResponse = { ...shockProbe, graph: undefined };

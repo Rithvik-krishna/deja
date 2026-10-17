@@ -8,12 +8,23 @@ import {
   detail037,
   detail045,
   inc037,
+  hypBaseline,
   inc045,
   ownerNow,
+  shockInconclusive,
   outcomeFailed,
   timeline037,
   timeline045,
 } from "./test/fixtures";
+
+// GraphView draws on a canvas, which jsdom doesn't have. The stub exposes just the payload it was given.
+vi.mock("./components/GraphView", () => ({
+  default: ({ payload }: { payload: { nodes: unknown[]; edges: unknown[] } | null }) => (
+    <div className="graph-totals">
+      {payload ? `${payload.nodes.length} nodes · ${payload.edges.length} edges` : "no payload"}
+    </div>
+  ),
+}));
 
 vi.mock("./api/client", () => ({
   api: {
@@ -28,6 +39,8 @@ vi.mock("./api/client", () => ({
     resetDemo: vi.fn(),
     owner: vi.fn(),
     reassign: vi.fn(),
+    hypotheses: vi.fn(),
+    evidenceShock: vi.fn(),
   },
 }));
 const m = vi.mocked(api);
@@ -45,6 +58,7 @@ beforeEach(() => {
   m.timeline.mockImplementation(async (id) => (id === "INC-045" ? timeline045 : timeline037));
   m.wipeSession.mockResolvedValue({ session_id: "x", wiped: true });
   m.owner.mockResolvedValue(ownerNow);
+  m.hypotheses.mockResolvedValue(hypBaseline);
 });
 
 describe("startup and layout", () => {
@@ -265,6 +279,35 @@ describe("chat driving the rest of the app", () => {
     await user.click(screen.getByRole("button", { name: "The restart failed" }));
     await screen.findByText("stress test reply");
     expect(screen.getByRole("tab", { name: "Stress Test" })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("evidence shock wiring", () => {
+  it("sends the shock graph to the centre panel, and never shows one incident's result on another", async () => {
+    const user = userEvent.setup();
+    m.evidenceShock.mockResolvedValue(shockInconclusive);
+    m.hypotheses.mockImplementation(async (id) => ({ ...hypBaseline, incident_id: id }));
+    render(<App />);
+
+    await user.click(await within(incidentsRegion()).findByRole("button", { name: /INC-045/ }));
+    await screen.findByRole("heading", { level: 3, name: "checkout latency spiking" });
+    await user.click(screen.getByRole("tab", { name: "Stress Test" }));
+    expect(m.hypotheses).toHaveBeenCalledExactlyOnceWith("INC-045");
+
+    await user.click(await screen.findByRole("checkbox", { name: "Remove entire source: Historical incidents" }));
+    await user.click(screen.getByRole("button", { name: "Run shock" }));
+    expect(await screen.findByRole("region", { name: "Result (after removal)" })).toBeInTheDocument();
+    expect(graphTotals()).toHaveTextContent("1 nodes · 0 edges"); // the response's graph replaced the centre graph
+
+    // Another incident: no result, fresh selection, its own hypotheses request.
+    await user.click(screen.getByRole("tab", { name: "Incident" }));
+    await user.click(within(incidentsRegion()).getByRole("button", { name: /INC-037/ }));
+    await user.click(screen.getByRole("tab", { name: "Stress Test" }));
+    await waitFor(() => expect(m.hypotheses).toHaveBeenLastCalledWith("INC-037"));
+    await screen.findByRole("region", { name: "Baseline hypotheses" });
+    expect(screen.queryByRole("region", { name: "Result (after removal)" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Removed in latest result")).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Remove entire source: Historical incidents" })).not.toBeChecked();
   });
 });
 

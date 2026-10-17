@@ -830,3 +830,195 @@
   background: var(--success-bg);
   border-radius: 6px;
 }
+
+/* ---------- Centre graph host ---------- */
+.graph-host {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.graph-empty {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+/* ---------- Stress Test (Evidence Shock Lab) ---------- */
+.stress-panel {
+  display: flex;
+  flex-direction: column;
+}
+.stress-panel > .state,
+.stress-panel > .shock-note {
+  padding: 0 14px 12px;
+}
+.stress-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 14px 0;
+}
+.shock-note {
+  padding: 6px 14px 10px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.hyp-list {
+  display: grid;
+  gap: 4px;
+}
+.hyp-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.hyp-rank {
+  color: var(--accent);
+  font-weight: 700;
+}
+.evidence-inventory {
+  display: grid;
+  gap: 8px;
+}
+.evidence-group {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+.evidence-group.is-selected {
+  border-color: var(--accent);
+  background: rgba(125, 180, 255, 0.07);
+}
+.evidence-group ul {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.group-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-weight: 600;
+}
+.group-id {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.evidence-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  flex: none;
+}
+.evidence-group li {
+  display: grid;
+  gap: 1px;
+  padding: 4px 6px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+}
+.evidence-group li label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.evidence-group li.is-selected {
+  border-left-color: var(--accent);
+  background: rgba(125, 180, 255, 0.1);
+}
+.evidence-group li.is-removed {
+  border-left-color: var(--danger);
+}
+.evidence-group li.is-removed .ev-label {
+  text-decoration: line-through;
+}
+.ev-meta {
+  padding-left: 26px;
+}
+.ev-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 26px;
+}
+.ev-badges:empty {
+  display: none;
+}
+.shock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.verdict-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 6px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border: 2px solid currentColor;
+}
+.verdict-robust .verdict-badge {
+  color: var(--success);
+}
+.verdict-fragile .verdict-badge {
+  color: var(--warn);
+}
+.verdict-inconclusive .verdict-badge {
+  color: var(--accent);
+}
+.shock-summary {
+  display: grid;
+  gap: 6px;
+}
+.verdict-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.next-check {
+  border-left: 4px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: grid;
+  gap: 2px;
+}
+.next-check p {
+  font-size: 1.0625rem;
+  overflow-wrap: anywhere;
+}
+.shockviz-host {
+  height: 440px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.shock-history {
+  display: grid;
+  gap: 10px;
+}
+.shock-history li {
+  display: grid;
+  gap: 2px;
+  padding-left: 10px;
+  border-left: 3px solid var(--border-strong);
+}
+.hist-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hist-reco {
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
