@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node copy_app_fallback.cjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
