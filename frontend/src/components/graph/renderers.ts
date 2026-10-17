@@ -1,4 +1,5 @@
 import {
+  FOCAL_NODE_STYLE,
   GHOST_EVIDENCE_STYLE,
   NODE_COLORS,
   getEdgeStyle,
@@ -37,70 +38,84 @@ export function drawNode(
 
   // Base node styling
   const isGhost = Boolean(node.isGhost);
-  const baseStyle = isGhost ? GHOST_EVIDENCE_STYLE : NODE_COLORS[node.kind] || NODE_COLORS.Unknown;
+  const isFocal = Boolean(
+    !isGhost &&
+    node.kind === "Service" &&
+    (node.highlight || (typeof node.score === "number" && node.score >= 5.0) || node.pulse)
+  );
 
-  // Calculate radius
-  let radius = 8;
+  const baseStyle = isGhost
+    ? GHOST_EVIDENCE_STYLE
+    : isFocal
+    ? FOCAL_NODE_STYLE
+    : NODE_COLORS[node.kind] || NODE_COLORS.Unknown;
+
+  // Calculate radius: Core hubs are larger spheres; satellites are clean celestial dots
+  let radius = 6;
   if (node.kind === "Service") {
     const score = node.animScore ?? node.score ?? 0;
-    radius = Math.max(8, Math.min(26, 8 + Math.sqrt(Math.max(0, score)) * 2.8));
+    radius = Math.max(9, Math.min(24, 9 + Math.sqrt(Math.max(0, score)) * 2.6));
   } else if (node.kind === "Incident") {
-    radius = 11;
-  } else if (node.kind === "Deploy") {
     radius = 9;
+  } else if (node.kind === "Deploy") {
+    radius = 6;
   } else if (node.kind === "Evidence") {
-    radius = 8;
+    radius = 5.5;
+  } else {
+    radius = 5.5;
   }
 
-  // Apply customizable node size scale while preserving relative scores
+  // Apply customizable node size scale
   radius *= nodeScale;
 
-  // Pulse effect if requested (e.g. top suspect flip or near tie)
+  // Pulse effect if requested (top suspect flip or near tie)
   if (node.pulse && !isDimmed) {
-    const pulseFactor = 1 + 0.16 * Math.sin(Date.now() / 130);
+    const pulseFactor = 1 + 0.18 * Math.sin(Date.now() / 120);
     radius *= pulseFactor;
   }
 
   node.radius = radius;
 
-  // Highlight glow
-  if (node.highlight && !isDimmed) {
-    ctx.shadowColor = baseStyle.glow;
-    ctx.shadowBlur = 18;
+  // Constellation glow: focal nodes radiate a vivid emerald glow; highlighted nodes radiate cyan
+  if ((isFocal || node.highlight) && !isDimmed) {
+    ctx.shadowColor = isFocal ? "rgba(16, 185, 129, 0.95)" : baseStyle.glow;
+    ctx.shadowBlur = isFocal ? 22 : 16;
   }
 
   // Draw node shape based on kind
   ctx.beginPath();
   if (node.kind === "Deploy") {
-    // Rounded rectangle for Deploy
-    const sz = radius * 1.8;
-    ctx.roundRect(x - sz / 2, y - sz / 2, sz, sz, 4);
+    const sz = radius * 1.6;
+    ctx.roundRect(x - sz / 2, y - sz / 2, sz, sz, 3);
   } else if (node.kind === "Fix") {
-    // Diamond shape for Fix
     ctx.moveTo(x, y - radius * 1.3);
     ctx.lineTo(x + radius * 1.3, y);
     ctx.lineTo(x, y + radius * 1.3);
     ctx.lineTo(x - radius * 1.3, y);
     ctx.closePath();
   } else {
-    // Standard circle
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
   }
 
-  // Fill with radial gradient for depth on active services
-  if (node.kind === "Service" && !isGhost) {
+  // Fill with radial gradient for depth
+  if (isFocal) {
     const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
-    grad.addColorStop(0, node.highlight ? "#38bdf8" : "#0ea5e9");
-    grad.addColorStop(1, node.highlight ? "#0284c7" : "#035388");
+    grad.addColorStop(0, "#34d399");
+    grad.addColorStop(1, "#047857");
+    ctx.fillStyle = grad;
+  } else if (node.kind === "Service" && !isGhost) {
+    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+    grad.addColorStop(0, node.highlight ? "#1e293b" : "#0f172a");
+    grad.addColorStop(1, node.highlight ? "#0f172a" : "#020617");
     ctx.fillStyle = grad;
   } else {
     ctx.fillStyle = baseStyle.fill;
   }
   ctx.fill();
 
-  // Stroke
-  ctx.lineWidth = node.highlight ? 2.5 : 1.5;
-  ctx.strokeStyle = node.highlight ? "#ffffff" : baseStyle.stroke;
+  // Stroke with luminescent rim
+  ctx.lineWidth = isFocal ? 2.5 : node.highlight ? 2.0 : 1.2;
+  ctx.strokeStyle = isFocal ? "#6ee7b7" : node.highlight ? "#38bdf8" : baseStyle.stroke;
   if (isGhost) {
     ctx.setLineDash([3, 3]);
   } else {
@@ -108,13 +123,13 @@ export function drawNode(
   }
   ctx.stroke();
 
-  // Outer focus/selection aura ring
-  if ((node.isFocused || node.highlight) && !isDimmed) {
+  // Outer focus / selection aura ring
+  if ((node.isFocused || node.highlight || isFocal) && !isDimmed) {
     ctx.beginPath();
     ctx.arc(x, y, radius + 4.5, 0, 2 * Math.PI);
-    ctx.strokeStyle = node.isFocused ? "#38bdf8" : "rgba(56, 189, 248, 0.6)";
-    ctx.lineWidth = 1.8;
-    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = isFocal ? "rgba(52, 211, 153, 0.75)" : node.isFocused ? "#38bdf8" : "rgba(56, 189, 248, 0.55)";
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([3, 3]);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -202,10 +217,15 @@ function drawNodeLabel(
   const isServiceOrIncident = node.kind === "Service" || node.kind === "Incident";
   const isLight = theme === "light";
 
+  // In constellation view, satellite labels hide when deeply zoomed out unless hovered, focused, or ghost evidence
+  if (!isServiceOrIncident && !isHighlight && !isGhost && globalScale < 0.9) {
+    return;
+  }
+
   // Base font size
-  let fontSize = isHighlight ? 12 : isServiceOrIncident ? 11 : 10;
+  let fontSize = isHighlight ? 12 : isServiceOrIncident ? 11 : 9.5;
   if (globalScale < 0.75 && !isHighlight && !isServiceOrIncident) {
-    fontSize = 9;
+    fontSize = 8.5;
   }
 
   ctx.font = `${isHighlight ? "bold" : isServiceOrIncident ? "600" : "normal"} ${fontSize}px sans-serif`;
@@ -222,35 +242,10 @@ function drawNodeLabel(
   const textMetrics = ctx.measureText(labelText);
   const textWidth = textMetrics.width;
 
-  // For Service and Incident nodes, render a subtle translucent background badge
-  if (isServiceOrIncident && !isDimmed) {
-    const padX = 5;
-    const padY = 2;
-    ctx.fillStyle = isLight
-      ? isHighlight
-        ? "rgba(255, 255, 255, 0.95)"
-        : "rgba(241, 245, 249, 0.9)"
-      : isHighlight
-      ? "rgba(15, 23, 42, 0.92)"
-      : "rgba(15, 23, 42, 0.75)";
-    ctx.beginPath();
-    ctx.roundRect(x - textWidth / 2 - padX, y - padY, textWidth + padX * 2, fontSize + padY * 2, 4);
-    ctx.fill();
-    ctx.strokeStyle = isLight
-      ? isHighlight
-        ? "#0284c7"
-        : "#cbd5e1"
-      : isHighlight
-      ? "#38bdf8"
-      : "rgba(51, 65, 85, 0.6)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  } else {
-    // High-contrast background halo for dark / light readability
-    ctx.lineWidth = 3.5;
-    ctx.strokeStyle = isLight ? "#ffffff" : "#050811";
-    ctx.strokeText(labelText, x, y);
-  }
+  // Clean, high-contrast text rendering with stroke halo (no bulky rectangular boxes)
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = isLight ? "#ffffff" : "#050811";
+  ctx.strokeText(labelText, x, y);
 
   // Fill text
   ctx.fillStyle = isGhost
@@ -266,8 +261,8 @@ function drawNodeLabel(
       ? "#0f172a"
       : "#f8fafc"
     : isLight
-    ? "#334155"
-    : "#cbd5e1";
+    ? "#475569"
+    : "#94a3b8";
   ctx.fillText(labelText, x, y);
 
   // Strikethrough label for ghost evidence
@@ -312,6 +307,12 @@ export function drawLink(
   const isGhost = Boolean(link.isGhost || source.isGhost || target.isGhost);
   const style = getEdgeStyle(link.type, link.props, link.highlight, isGhost);
 
+  // In constellation view, highlighted links radiate a glowing beam
+  if (link.highlight && !isDimmed) {
+    ctx.shadowColor = "#38bdf8";
+    ctx.shadowBlur = 8;
+  }
+
   // Draw main link line with configurable thickness scale
   ctx.beginPath();
   ctx.moveTo(sx, sy);
@@ -320,6 +321,9 @@ export function drawLink(
   ctx.lineWidth = style.width * linkThickness;
   ctx.setLineDash(style.dash);
   ctx.stroke();
+
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
 
   // ATTEMPTED edges: Draw visible status badge at midpoint so status is NOT conveyed by color alone
   if (link.type === "ATTEMPTED") {

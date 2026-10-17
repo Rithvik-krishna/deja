@@ -955,7 +955,7 @@ export default function GraphView({
           width={dimensions.width}
           height={dimensions.height}
           graphData={graphData}
-          backgroundColor="#090d16"
+          backgroundColor="#060913"
           nodeRelSize={6}
           nodeCanvasObject={(node, ctx, globalScale) =>
             drawNode(node as VisualNode, ctx, globalScale, hasHighlights, settings.nodeScale)

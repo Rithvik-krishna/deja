@@ -37,11 +37,11 @@ export interface GraphSettings {
 }
 
 export const DEFAULT_GRAPH_SETTINGS: GraphSettings = {
-  repulsion: -320,
-  nodeScale: 1.05,
-  linkThickness: 1.1,
-  centreForce: 0.12,
-  repelForce: 450,
-  linkForce: 0.9,
-  linkDistance: 85,
+  repulsion: -160,
+  nodeScale: 1.0,
+  linkThickness: 0.85,
+  centreForce: 0.42,
+  repelForce: 360,
+  linkForce: 0.95,
+  linkDistance: 48,
 };

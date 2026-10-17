@@ -10,53 +10,60 @@ export interface NodeStyleConfig {
 
 export const NODE_COLORS: Record<NodeKind, NodeStyleConfig> = {
   Service: {
-    fill: "#0284c7",
+    fill: "#0f172a",
     stroke: "#38bdf8",
-    text: "#ffffff",
-    glow: "rgba(56, 189, 248, 0.7)",
+    text: "#f8fafc",
+    glow: "rgba(56, 189, 248, 0.6)",
   },
   Incident: {
-    fill: "#be123c",
+    fill: "#1e1e2e",
     stroke: "#f43f5e",
     text: "#ffffff",
     glow: "rgba(244, 63, 94, 0.8)",
   },
   Deploy: {
-    fill: "#d97706",
-    stroke: "#fbbf24",
-    text: "#ffffff",
-    glow: "rgba(251, 191, 36, 0.7)",
+    fill: "#1e293b",
+    stroke: "#60a5fa",
+    text: "#e2e8f0",
+    glow: "rgba(96, 165, 250, 0.5)",
   },
   Engineer: {
-    fill: "#047857",
+    fill: "#064e3b",
     stroke: "#34d399",
     text: "#ffffff",
     glow: "rgba(52, 211, 153, 0.6)",
   },
   Fix: {
-    fill: "#7e22ce",
+    fill: "#1e1b4b",
     stroke: "#c084fc",
     text: "#ffffff",
-    glow: "rgba(192, 132, 252, 0.7)",
+    glow: "rgba(192, 132, 252, 0.6)",
   },
   Evidence: {
-    fill: "#0e7490",
+    fill: "#083344",
     stroke: "#22d3ee",
     text: "#ffffff",
     glow: "rgba(34, 211, 238, 0.6)",
   },
   Unknown: {
-    fill: "#334155",
-    stroke: "#94a3b8",
-    text: "#f8fafc",
-    glow: "rgba(148, 163, 184, 0.4)",
+    fill: "#1e293b",
+    stroke: "#64748b",
+    text: "#94a3b8",
+    glow: "rgba(148, 163, 184, 0.3)",
   },
 };
 
+export const FOCAL_NODE_STYLE: NodeStyleConfig = {
+  fill: "#047857",
+  stroke: "#34d399",
+  text: "#ffffff",
+  glow: "rgba(16, 185, 129, 0.95)",
+};
+
 export const GHOST_EVIDENCE_STYLE: NodeStyleConfig = {
-  fill: "rgba(30, 41, 59, 0.45)",
-  stroke: "#64748b",
-  text: "#94a3b8",
+  fill: "rgba(15, 23, 42, 0.4)",
+  stroke: "#475569",
+  text: "#64748b",
   glow: "transparent",
 };
 
@@ -75,39 +82,39 @@ export function getEdgeStyle(
 ): EdgeStyleConfig {
   if (isGhost) {
     return {
-      color: "rgba(100, 116, 139, 0.45)",
-      dash: [4, 4],
-      width: 1.2,
-      arrow: true,
+      color: "rgba(100, 116, 139, 0.3)",
+      dash: [3, 3],
+      width: 0.8,
+      arrow: false,
     };
   }
 
-  const baseAlpha = highlight ? 1.0 : 0.65;
+  const baseAlpha = highlight ? 1.0 : 0.38;
 
   switch (type) {
     case "DEPENDS_ON":
       return {
-        color: highlight ? "#38bdf8" : `rgba(71, 85, 105, ${baseAlpha * 0.75})`,
+        color: highlight ? "#38bdf8" : `rgba(34, 211, 238, ${baseAlpha})`,
         dash: [],
-        width: highlight ? 2.8 : 1.4,
-        arrow: true,
+        width: highlight ? 2.2 : 0.85,
+        arrow: highlight,
       };
 
     case "ATTEMPTED": {
       const status = props?.status?.toUpperCase();
       if (status === "SUCCESS") {
         return {
-          color: highlight ? "#4ade80" : `rgba(34, 197, 94, ${baseAlpha})`,
+          color: highlight ? "#4ade80" : `rgba(34, 197, 94, ${baseAlpha * 1.5})`,
           dash: [],
-          width: highlight ? 3.0 : 2.0,
+          width: highlight ? 2.6 : 1.4,
           arrow: false,
         };
       }
       // FAILED
       return {
-        color: highlight ? "#f87171" : `rgba(239, 68, 68, ${baseAlpha})`,
-        dash: [5, 4],
-        width: highlight ? 3.0 : 2.0,
+        color: highlight ? "#f87171" : `rgba(239, 68, 68, ${baseAlpha * 1.5})`,
+        dash: [4, 3],
+        width: highlight ? 2.6 : 1.4,
         arrow: false,
       };
     }
@@ -115,60 +122,60 @@ export function getEdgeStyle(
     case "ORIGINATED_IN":
       return {
         color: highlight ? "#fb923c" : `rgba(249, 115, 22, ${baseAlpha})`,
-        dash: [6, 3],
-        width: highlight ? 2.8 : 1.8,
-        arrow: true,
+        dash: [4, 3],
+        width: highlight ? 2.2 : 1.0,
+        arrow: highlight,
       };
 
     case "IMPACTED":
       return {
         color: highlight ? "#fb7185" : `rgba(244, 63, 94, ${baseAlpha})`,
         dash: [2, 2],
-        width: highlight ? 2.5 : 1.5,
-        arrow: true,
+        width: highlight ? 2.0 : 0.9,
+        arrow: highlight,
       };
 
     case "FOLLOWED":
       return {
         color: highlight ? "#c084fc" : `rgba(168, 85, 247, ${baseAlpha})`,
-        dash: [3, 3],
-        width: highlight ? 2.2 : 1.4,
-        arrow: true,
+        dash: [3, 2],
+        width: highlight ? 2.0 : 0.85,
+        arrow: highlight,
       };
 
     case "TO":
       return {
-        color: highlight ? "#60a5fa" : `rgba(96, 165, 250, ${baseAlpha})`,
+        color: highlight ? "#60a5fa" : `rgba(56, 189, 248, ${baseAlpha})`,
         dash: [],
-        width: highlight ? 2.2 : 1.4,
-        arrow: true,
+        width: highlight ? 2.0 : 0.85,
+        arrow: highlight,
       };
 
     case "AUTHORED_BY":
       return {
         color: highlight ? "#34d399" : `rgba(52, 211, 153, ${baseAlpha})`,
-        dash: [4, 3],
-        width: highlight ? 2.0 : 1.2,
+        dash: [3, 3],
+        width: highlight ? 1.8 : 0.85,
         arrow: false,
       };
 
     case "SUPPORTS": {
       const weight = typeof props?.weight === "number" ? props.weight : 1.0;
-      const scaledWidth = Math.max(1.2, Math.min(6.5, weight * 1.5));
+      const scaledWidth = Math.max(0.85, Math.min(3.5, weight * 0.9));
       return {
-        color: highlight ? "#22d3ee" : `rgba(6, 182, 212, ${baseAlpha})`,
+        color: highlight ? "#22d3ee" : `rgba(45, 212, 191, ${baseAlpha * 1.2})`,
         dash: [],
-        width: highlight ? scaledWidth + 1.5 : scaledWidth,
-        arrow: true,
+        width: highlight ? scaledWidth + 1.2 : scaledWidth,
+        arrow: highlight,
       };
     }
 
     default:
       return {
-        color: highlight ? "#cbd5e1" : `rgba(148, 163, 184, ${baseAlpha})`,
+        color: highlight ? "#38bdf8" : `rgba(34, 211, 238, ${baseAlpha})`,
         dash: [],
-        width: highlight ? 2.0 : 1.0,
-        arrow: true,
+        width: highlight ? 2.0 : 0.85,
+        arrow: highlight,
       };
   }
 }
