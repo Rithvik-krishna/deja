@@ -1,0 +1,383 @@
+{
+ "session_id": "x",
+ "reply": "Opened INC-046. Tracing upstream from checkout, the likely origin is payments-api - 5 past latency incidents match. A deploy (v2.3.1 by Asha Menon) landed recently. Try rollback-deploy first (worked in 4/4 similar incidents). Avoid restart-pods.",
+ "intent": "alert",
+ "incident_id": "INC-046",
+ "tool_calls": [
+  {
+   "name": "create_alert",
+   "args": {
+    "service": "checkout",
+    "symptom": "latency"
+   },
+   "summary": "INC-046; likely origin payments-api"
+  }
+ ],
+ "recalled": [
+  "INC-045: same symptom (latency), checkout was impacted, same origin (payments-api)",
+  "INC-042: same symptom (latency), checkout was impacted, same origin (payments-api)",
+  "INC-028: same symptom (latency), checkout was impacted, same origin (payments-api)"
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "inc:INC-046",
+    "label": "Incident",
+    "name": "INC-046",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "open",
+     "title": "checkout latency spiking"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": 8.5
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": true,
+    "score": 2.0
+   },
+   {
+    "id": "dep:DEP-036",
+    "label": "Deploy",
+    "name": "payments-api v2.3.1",
+    "props": {
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "eng:asha-menon",
+    "label": "Engineer",
+    "name": "Asha Menon",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "svc:inventory",
+    "label": "Service",
+    "name": "inventory",
+    "props": {
+     "tier": "tier-2",
+     "team": "supply"
+    },
+    "highlight": false,
+    "score": 4.5
+   },
+   {
+    "id": "inc:INC-045",
+    "label": "Incident",
+    "name": "INC-045",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "open",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:restart-pods",
+    "label": "Fix",
+    "name": "restart-pods",
+    "props": {},
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "inc:INC-042",
+    "label": "Incident",
+    "name": "INC-042",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-034",
+    "label": "Deploy",
+    "name": "payments-api v2.3.0",
+    "props": {
+     "version": "v2.3.0",
+     "deployed_at": "2026-09-25T03:55:00Z"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "eng:dev-patel",
+    "label": "Engineer",
+    "name": "Dev Patel",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:rollback-deploy",
+    "label": "Fix",
+    "name": "rollback-deploy",
+    "props": {},
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "inc:INC-028",
+    "label": "Incident",
+    "name": "INC-028",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-028",
+    "label": "Deploy",
+    "name": "payments-api v2.2.0",
+    "props": {
+     "version": "v2.2.0",
+     "deployed_at": "2026-08-09T04:30:00Z"
+    },
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "inc:INC-046|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-046",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-046|IMPACTED|svc:checkout",
+    "source": "inc:INC-046",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|TO|svc:payments-api",
+    "source": "dep:DEP-036",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-036",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-046|FOLLOWED|dep:DEP-036",
+    "source": "inc:INC-046",
+    "target": "dep:DEP-036",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-045",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-045|IMPACTED|svc:checkout",
+    "source": "inc:INC-045",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-045|FOLLOWED|dep:DEP-036",
+    "source": "inc:INC-045",
+    "target": "dep:DEP-036",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-045|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-045",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-042",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|IMPACTED|svc:checkout",
+    "source": "inc:INC-042",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-034|TO|svc:payments-api",
+    "source": "dep:DEP-034",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-034|AUTHORED_BY|eng:dev-patel",
+    "source": "dep:DEP-034",
+    "target": "eng:dev-patel",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|FOLLOWED|dep:DEP-034",
+    "source": "inc:INC-042",
+    "target": "dep:DEP-034",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-042",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|ATTEMPTED|fix:rollback-deploy",
+    "source": "inc:INC-042",
+    "target": "fix:rollback-deploy",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-028",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|IMPACTED|svc:checkout",
+    "source": "inc:INC-028",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-028|TO|svc:payments-api",
+    "source": "dep:DEP-028",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-028|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-028",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|FOLLOWED|dep:DEP-028",
+    "source": "inc:INC-028",
+    "target": "dep:DEP-028",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-028",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ATTEMPTED|fix:rollback-deploy",
+    "source": "inc:INC-028",
+    "target": "fix:rollback-deploy",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   }
+  ]
+ }
+}

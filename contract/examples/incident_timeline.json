@@ -1,0 +1,27 @@
+[
+ {
+  "ts": "2026-09-11T09:43:00Z",
+  "type": "incident_opened",
+  "text": "Incident opened: order-service latency spiking",
+  "node_ids": [
+   "inc:INC-037"
+  ]
+ },
+ {
+  "ts": "2026-09-11T10:13:00Z",
+  "type": "attempt",
+  "text": "Vikram Singh tried scale-up-replicas -> SUCCESS",
+  "node_ids": [
+   "fix:scale-up-replicas",
+   "inc:INC-037"
+  ]
+ },
+ {
+  "ts": "2026-09-11T10:21:00Z",
+  "type": "resolved",
+  "text": "Incident resolved",
+  "node_ids": [
+   "inc:INC-037"
+  ]
+ }
+]

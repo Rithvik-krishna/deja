@@ -1,0 +1,200 @@
+{
+ "attempt": {
+  "id": "ATT-068",
+  "fix": "restart-pods",
+  "status": "FAILED",
+  "ts": "2026-10-17T07:00:00Z",
+  "engineer": "Asha Menon",
+  "notes": "still failing"
+ },
+ "incident": {
+  "id": "INC-045",
+  "title": "checkout latency spiking",
+  "severity": "SEV2",
+  "symptom": "latency",
+  "status": "open",
+  "started_at": "2026-10-17T07:00:00Z",
+  "origin": "payments-api",
+  "impacted": [
+   "checkout"
+  ]
+ },
+ "recommendations": [
+  {
+   "fix": "rollback-deploy",
+   "score": 0.833,
+   "attempts": 4,
+   "successes": 4,
+   "rationale": "Worked in 4/4 similar incidents",
+   "avoid": false,
+   "already_failed_here": false
+  },
+  {
+   "fix": "scale-up-replicas",
+   "score": 0.333,
+   "attempts": 1,
+   "successes": 0,
+   "rationale": "Worked in 0/1 similar incidents",
+   "avoid": false,
+   "already_failed_here": false
+  },
+  {
+   "fix": "restart-pods",
+   "score": 0.143,
+   "attempts": 5,
+   "successes": 0,
+   "rationale": "Already failed in this incident. Failed 5/5 times on similar latency incidents - avoid",
+   "avoid": true,
+   "already_failed_here": true
+  }
+ ],
+ "fix_stats": [
+  {
+   "fix": "rollback-deploy",
+   "attempts": 4,
+   "successes": 4,
+   "failures": 0,
+   "success_rate": 1.0,
+   "smoothed_score": 0.833,
+   "avoid": false
+  },
+  {
+   "fix": "scale-up-replicas",
+   "attempts": 1,
+   "successes": 0,
+   "failures": 1,
+   "success_rate": 0.0,
+   "smoothed_score": 0.333,
+   "avoid": false
+  },
+  {
+   "fix": "restart-pods",
+   "attempts": 5,
+   "successes": 0,
+   "failures": 5,
+   "success_rate": 0.0,
+   "smoothed_score": 0.143,
+   "avoid": true
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "inc:INC-045",
+    "label": "Incident",
+    "name": "INC-045",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "open",
+     "title": "checkout latency spiking"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-036",
+    "label": "Deploy",
+    "name": "payments-api v2.3.1",
+    "props": {
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "eng:asha-menon",
+    "label": "Engineer",
+    "name": "Asha Menon",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:restart-pods",
+    "label": "Fix",
+    "name": "restart-pods",
+    "props": {},
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "inc:INC-045|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-045",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|IMPACTED|svc:checkout",
+    "source": "inc:INC-045",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|TO|svc:payments-api",
+    "source": "dep:DEP-036",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-036",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|FOLLOWED|dep:DEP-036",
+    "source": "inc:INC-045",
+    "target": "dep:DEP-036",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-045",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   }
+  ]
+ }
+}

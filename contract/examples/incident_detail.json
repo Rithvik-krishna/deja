@@ -1,0 +1,140 @@
+{
+ "id": "INC-037",
+ "title": "order-service latency spiking",
+ "severity": "SEV3",
+ "symptom": "latency",
+ "status": "resolved",
+ "started_at": "2026-09-11T09:43:00Z",
+ "origin": "redis-cache",
+ "impacted": [
+  "order-service",
+  "refunds",
+  "web-frontend"
+ ],
+ "resolved_at": "2026-09-11T10:21:00Z",
+ "summary": "Root cause in redis-cache (latency). Resolved via scale-up-replicas.",
+ "followed_deploy": null,
+ "attempts": [
+  {
+   "id": "ATT-053",
+   "fix": "scale-up-replicas",
+   "status": "SUCCESS",
+   "ts": "2026-09-11T10:13:00Z",
+   "engineer": "Vikram Singh",
+   "notes": ""
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "inc:INC-037",
+    "label": "Incident",
+    "name": "INC-037",
+    "props": {
+     "severity": "SEV3",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "order-service latency spiking"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:redis-cache",
+    "label": "Service",
+    "name": "redis-cache",
+    "props": {
+     "tier": "tier-2",
+     "team": "infra"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:order-service",
+    "label": "Service",
+    "name": "order-service",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "svc:refunds",
+    "label": "Service",
+    "name": "refunds",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "svc:web-frontend",
+    "label": "Service",
+    "name": "web-frontend",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:scale-up-replicas",
+    "label": "Fix",
+    "name": "scale-up-replicas",
+    "props": {},
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "inc:INC-037|ORIGINATED_IN|svc:redis-cache",
+    "source": "inc:INC-037",
+    "target": "svc:redis-cache",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-037|IMPACTED|svc:order-service",
+    "source": "inc:INC-037",
+    "target": "svc:order-service",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-037|IMPACTED|svc:refunds",
+    "source": "inc:INC-037",
+    "target": "svc:refunds",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-037|IMPACTED|svc:web-frontend",
+    "source": "inc:INC-037",
+    "target": "svc:web-frontend",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-037|ATTEMPTED|fix:scale-up-replicas",
+    "source": "inc:INC-037",
+    "target": "fix:scale-up-replicas",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   }
+  ]
+ }
+}

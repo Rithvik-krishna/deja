@@ -1,0 +1,154 @@
+[
+ {
+  "incident": {
+   "id": "INC-004",
+   "title": "mobile-bff latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-04-28T22:59:00Z",
+   "origin": "checkout",
+   "impacted": [
+    "mobile-bff",
+    "web-frontend"
+   ]
+  },
+  "score": 0.8,
+  "why": "same symptom (latency), originated in checkout",
+  "attempts": [
+   {
+    "id": "ATT-005",
+    "fix": "restart-pods",
+    "status": "SUCCESS",
+    "ts": "2026-04-28T23:28:00Z",
+    "engineer": "Sana Khan",
+    "notes": "Restart cleared the symptom"
+   }
+  ]
+ },
+ {
+  "incident": {
+   "id": "INC-044",
+   "title": "checkout latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-10-12T09:15:00Z",
+   "origin": "inventory",
+   "impacted": [
+    "checkout",
+    "cart"
+   ]
+  },
+  "score": 0.65,
+  "why": "same symptom (latency), checkout was impacted",
+  "attempts": [
+   {
+    "id": "ATT-067",
+    "fix": "restart-pods",
+    "status": "SUCCESS",
+    "ts": "2026-10-12T09:47:00Z",
+    "engineer": "Kiran Rao",
+    "notes": "Restart cleared the symptom"
+   }
+  ]
+ },
+ {
+  "incident": {
+   "id": "INC-042",
+   "title": "checkout latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-09-25T05:50:00Z",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "subscriptions"
+   ]
+  },
+  "score": 0.65,
+  "why": "same symptom (latency), checkout was impacted",
+  "attempts": [
+   {
+    "id": "ATT-063",
+    "fix": "restart-pods",
+    "status": "FAILED",
+    "ts": "2026-09-25T06:28:00Z",
+    "engineer": "Asha Menon",
+    "notes": "Pods restarted; symptom unchanged"
+   },
+   {
+    "id": "ATT-064",
+    "fix": "rollback-deploy",
+    "status": "SUCCESS",
+    "ts": "2026-09-25T07:00:00Z",
+    "engineer": "Asha Menon",
+    "notes": "Rolled back; metrics recovered"
+   }
+  ]
+ },
+ {
+  "incident": {
+   "id": "INC-028",
+   "title": "checkout latency spiking",
+   "severity": "SEV2",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-08-09T06:20:00Z",
+   "origin": "payments-api",
+   "impacted": [
+    "checkout",
+    "refunds"
+   ]
+  },
+  "score": 0.65,
+  "why": "same symptom (latency), checkout was impacted",
+  "attempts": [
+   {
+    "id": "ATT-035",
+    "fix": "restart-pods",
+    "status": "FAILED",
+    "ts": "2026-08-09T06:40:00Z",
+    "engineer": "Asha Menon",
+    "notes": "Pods restarted; symptom unchanged"
+   },
+   {
+    "id": "ATT-036",
+    "fix": "rollback-deploy",
+    "status": "SUCCESS",
+    "ts": "2026-08-09T07:04:00Z",
+    "engineer": "Asha Menon",
+    "notes": "Rolled back; metrics recovered"
+   }
+  ]
+ },
+ {
+  "incident": {
+   "id": "INC-026",
+   "title": "checkout latency spiking",
+   "severity": "SEV3",
+   "symptom": "latency",
+   "status": "resolved",
+   "started_at": "2026-07-30T00:22:00Z",
+   "origin": "cart",
+   "impacted": [
+    "checkout",
+    "mobile-bff",
+    "web-frontend"
+   ]
+  },
+  "score": 0.65,
+  "why": "same symptom (latency), checkout was impacted",
+  "attempts": [
+   {
+    "id": "ATT-033",
+    "fix": "rollback-deploy",
+    "status": "SUCCESS",
+    "ts": "2026-07-30T01:01:00Z",
+    "engineer": "Arjun Reddy",
+    "notes": "Rolled back; metrics recovered"
+   }
+  ]
+ }
+]

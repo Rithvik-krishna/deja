@@ -1,0 +1,29 @@
+[
+ {
+  "fix": "rollback-deploy",
+  "attempts": 4,
+  "successes": 4,
+  "failures": 0,
+  "success_rate": 1.0,
+  "smoothed_score": 0.833,
+  "avoid": false
+ },
+ {
+  "fix": "scale-up-replicas",
+  "attempts": 1,
+  "successes": 0,
+  "failures": 1,
+  "success_rate": 0.0,
+  "smoothed_score": 0.333,
+  "avoid": false
+ },
+ {
+  "fix": "restart-pods",
+  "attempts": 4,
+  "successes": 0,
+  "failures": 4,
+  "success_rate": 0.0,
+  "smoothed_score": 0.167,
+  "avoid": true
+ }
+]

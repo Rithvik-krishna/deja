@@ -1,0 +1,697 @@
+{
+ "incident": {
+  "id": "INC-045",
+  "title": "checkout latency spiking",
+  "severity": "SEV2",
+  "symptom": "latency",
+  "status": "open",
+  "started_at": "2026-10-17T07:00:00Z",
+  "origin": "payments-api",
+  "impacted": [
+   "checkout"
+  ]
+ },
+ "likely_origin": "payments-api",
+ "suspects": [
+  {
+   "service": "payments-api",
+   "hops": 1,
+   "score": 7.5,
+   "recent_deploys": [
+    {
+     "id": "DEP-036",
+     "service": "payments-api",
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z",
+     "author": "Asha Menon"
+    }
+   ],
+   "same_symptom_incidents": 4,
+   "owner": "Asha Menon"
+  },
+  {
+   "service": "inventory",
+   "hops": 1,
+   "score": 4.5,
+   "recent_deploys": [
+    {
+     "id": "DEP-035",
+     "service": "inventory",
+     "version": "v4.8.0",
+     "deployed_at": "2026-10-13T05:30:00Z",
+     "author": "Kiran Rao"
+    }
+   ],
+   "same_symptom_incidents": 1,
+   "owner": "Kiran Rao"
+  },
+  {
+   "service": "checkout",
+   "hops": 0,
+   "score": 2.0,
+   "recent_deploys": [],
+   "same_symptom_incidents": 1,
+   "owner": "Sana Khan"
+  },
+  {
+   "service": "cart",
+   "hops": 1,
+   "score": 1.5,
+   "recent_deploys": [],
+   "same_symptom_incidents": 1,
+   "owner": "Arjun Reddy"
+  },
+  {
+   "service": "kafka-bus",
+   "hops": 2,
+   "score": 1.333,
+   "recent_deploys": [],
+   "same_symptom_incidents": 1,
+   "owner": "Vikram Singh"
+  }
+ ],
+ "similar_incidents": [
+  {
+   "incident": {
+    "id": "INC-042",
+    "title": "checkout latency spiking",
+    "severity": "SEV2",
+    "symptom": "latency",
+    "status": "resolved",
+    "started_at": "2026-09-25T05:50:00Z",
+    "origin": "payments-api",
+    "impacted": [
+     "checkout",
+     "subscriptions"
+    ]
+   },
+   "score": 0.95,
+   "why": "same symptom (latency), checkout was impacted, same origin (payments-api)",
+   "attempts": [
+    {
+     "id": "ATT-063",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-09-25T06:28:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-064",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-09-25T07:00:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "incident": {
+    "id": "INC-028",
+    "title": "checkout latency spiking",
+    "severity": "SEV2",
+    "symptom": "latency",
+    "status": "resolved",
+    "started_at": "2026-08-09T06:20:00Z",
+    "origin": "payments-api",
+    "impacted": [
+     "checkout",
+     "refunds"
+    ]
+   },
+   "score": 0.95,
+   "why": "same symptom (latency), checkout was impacted, same origin (payments-api)",
+   "attempts": [
+    {
+     "id": "ATT-035",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-08-09T06:40:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-036",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-08-09T07:04:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "incident": {
+    "id": "INC-018",
+    "title": "checkout latency spiking",
+    "severity": "SEV1",
+    "symptom": "latency",
+    "status": "resolved",
+    "started_at": "2026-06-19T05:45:00Z",
+    "origin": "payments-api",
+    "impacted": [
+     "checkout",
+     "order-service",
+     "subscriptions"
+    ]
+   },
+   "score": 0.95,
+   "why": "same symptom (latency), checkout was impacted, same origin (payments-api)",
+   "attempts": [
+    {
+     "id": "ATT-021",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-06-19T06:20:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-022",
+     "fix": "scale-up-replicas",
+     "status": "FAILED",
+     "ts": "2026-06-19T06:48:00Z",
+     "engineer": "Asha Menon",
+     "notes": ""
+    },
+    {
+     "id": "ATT-023",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-06-19T07:08:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "incident": {
+    "id": "INC-007",
+    "title": "checkout latency spiking",
+    "severity": "SEV2",
+    "symptom": "latency",
+    "status": "resolved",
+    "started_at": "2026-05-06T06:15:00Z",
+    "origin": "payments-api",
+    "impacted": [
+     "checkout",
+     "order-service"
+    ]
+   },
+   "score": 0.95,
+   "why": "same symptom (latency), checkout was impacted, same origin (payments-api)",
+   "attempts": [
+    {
+     "id": "ATT-008",
+     "fix": "restart-pods",
+     "status": "FAILED",
+     "ts": "2026-05-06T06:40:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Pods restarted; symptom unchanged"
+    },
+    {
+     "id": "ATT-009",
+     "fix": "rollback-deploy",
+     "status": "SUCCESS",
+     "ts": "2026-05-06T07:06:00Z",
+     "engineer": "Asha Menon",
+     "notes": "Rolled back; metrics recovered"
+    }
+   ]
+  },
+  {
+   "incident": {
+    "id": "INC-004",
+    "title": "mobile-bff latency spiking",
+    "severity": "SEV3",
+    "symptom": "latency",
+    "status": "resolved",
+    "started_at": "2026-04-28T22:59:00Z",
+    "origin": "checkout",
+    "impacted": [
+     "mobile-bff",
+     "web-frontend"
+    ]
+   },
+   "score": 0.8,
+   "why": "same symptom (latency), originated in checkout",
+   "attempts": [
+    {
+     "id": "ATT-005",
+     "fix": "restart-pods",
+     "status": "SUCCESS",
+     "ts": "2026-04-28T23:28:00Z",
+     "engineer": "Sana Khan",
+     "notes": "Restart cleared the symptom"
+    }
+   ]
+  }
+ ],
+ "recommendations": [
+  {
+   "fix": "rollback-deploy",
+   "score": 0.833,
+   "attempts": 4,
+   "successes": 4,
+   "rationale": "Worked in 4/4 similar incidents",
+   "avoid": false,
+   "already_failed_here": false
+  },
+  {
+   "fix": "scale-up-replicas",
+   "score": 0.333,
+   "attempts": 1,
+   "successes": 0,
+   "rationale": "Worked in 0/1 similar incidents",
+   "avoid": false,
+   "already_failed_here": false
+  },
+  {
+   "fix": "restart-pods",
+   "score": 0.167,
+   "attempts": 4,
+   "successes": 0,
+   "rationale": "Failed 4/4 times on similar latency incidents - avoid",
+   "avoid": true,
+   "already_failed_here": false
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "inc:INC-045",
+    "label": "Incident",
+    "name": "INC-045",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "open",
+     "title": "checkout latency spiking"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": 7.5
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": true,
+    "score": 2.0
+   },
+   {
+    "id": "dep:DEP-036",
+    "label": "Deploy",
+    "name": "payments-api v2.3.1",
+    "props": {
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "eng:asha-menon",
+    "label": "Engineer",
+    "name": "Asha Menon",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "svc:inventory",
+    "label": "Service",
+    "name": "inventory",
+    "props": {
+     "tier": "tier-2",
+     "team": "supply"
+    },
+    "highlight": false,
+    "score": 4.5
+   },
+   {
+    "id": "inc:INC-042",
+    "label": "Incident",
+    "name": "INC-042",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-034",
+    "label": "Deploy",
+    "name": "payments-api v2.3.0",
+    "props": {
+     "version": "v2.3.0",
+     "deployed_at": "2026-09-25T03:55:00Z"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "eng:dev-patel",
+    "label": "Engineer",
+    "name": "Dev Patel",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:restart-pods",
+    "label": "Fix",
+    "name": "restart-pods",
+    "props": {},
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:rollback-deploy",
+    "label": "Fix",
+    "name": "rollback-deploy",
+    "props": {},
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "inc:INC-028",
+    "label": "Incident",
+    "name": "INC-028",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-028",
+    "label": "Deploy",
+    "name": "payments-api v2.2.0",
+    "props": {
+     "version": "v2.2.0",
+     "deployed_at": "2026-08-09T04:30:00Z"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "inc:INC-018",
+    "label": "Incident",
+    "name": "INC-018",
+    "props": {
+     "severity": "SEV1",
+     "symptom": "latency",
+     "status": "resolved",
+     "title": "checkout latency spiking"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-020",
+    "label": "Deploy",
+    "name": "payments-api v2.1.0",
+    "props": {
+     "version": "v2.1.0",
+     "deployed_at": "2026-06-19T03:40:00Z"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:scale-up-replicas",
+    "label": "Fix",
+    "name": "scale-up-replicas",
+    "props": {},
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "inc:INC-045|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-045",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|IMPACTED|svc:checkout",
+    "source": "inc:INC-045",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|TO|svc:payments-api",
+    "source": "dep:DEP-036",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-036",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|FOLLOWED|dep:DEP-036",
+    "source": "inc:INC-045",
+    "target": "dep:DEP-036",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-042|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-042",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|IMPACTED|svc:checkout",
+    "source": "inc:INC-042",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-034|TO|svc:payments-api",
+    "source": "dep:DEP-034",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-034|AUTHORED_BY|eng:dev-patel",
+    "source": "dep:DEP-034",
+    "target": "eng:dev-patel",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|FOLLOWED|dep:DEP-034",
+    "source": "inc:INC-042",
+    "target": "dep:DEP-034",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-042",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-042|ATTEMPTED|fix:rollback-deploy",
+    "source": "inc:INC-042",
+    "target": "fix:rollback-deploy",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-028",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|IMPACTED|svc:checkout",
+    "source": "inc:INC-028",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-028|TO|svc:payments-api",
+    "source": "dep:DEP-028",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-028|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-028",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|FOLLOWED|dep:DEP-028",
+    "source": "inc:INC-028",
+    "target": "dep:DEP-028",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-028",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-028|ATTEMPTED|fix:rollback-deploy",
+    "source": "inc:INC-028",
+    "target": "fix:rollback-deploy",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-018",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|IMPACTED|svc:checkout",
+    "source": "inc:INC-018",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-020|TO|svc:payments-api",
+    "source": "dep:DEP-020",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "dep:DEP-020|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-020",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|FOLLOWED|dep:DEP-020",
+    "source": "inc:INC-018",
+    "target": "dep:DEP-020",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-018",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|ATTEMPTED|fix:scale-up-replicas",
+    "source": "inc:INC-018",
+    "target": "fix:scale-up-replicas",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   },
+   {
+    "id": "inc:INC-018|ATTEMPTED|fix:rollback-deploy",
+    "source": "inc:INC-018",
+    "target": "fix:rollback-deploy",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "SUCCESS"
+    },
+    "highlight": false
+   }
+  ]
+ }
+}

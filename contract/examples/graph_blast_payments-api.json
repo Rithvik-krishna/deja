@@ -1,0 +1,327 @@
+{
+ "service": "payments-api",
+ "depth": 3,
+ "total": 9,
+ "impacted": [
+  {
+   "service": "checkout",
+   "tier": "tier-1",
+   "hops": 1,
+   "owner": "Sana Khan"
+  },
+  {
+   "service": "invoicing",
+   "tier": "tier-3",
+   "hops": 1,
+   "owner": "Dev Patel"
+  },
+  {
+   "service": "order-service",
+   "tier": "tier-1",
+   "hops": 1,
+   "owner": "Sana Khan"
+  },
+  {
+   "service": "refunds",
+   "tier": "tier-2",
+   "hops": 1,
+   "owner": "Dev Patel"
+  },
+  {
+   "service": "subscriptions",
+   "tier": "tier-2",
+   "hops": 1,
+   "owner": "Tara Bose"
+  },
+  {
+   "service": "admin-portal",
+   "tier": "tier-3",
+   "hops": 2,
+   "owner": "Ravi Iyer"
+  },
+  {
+   "service": "loyalty",
+   "tier": "tier-3",
+   "hops": 2,
+   "owner": "Tara Bose"
+  },
+  {
+   "service": "mobile-bff",
+   "tier": "tier-1",
+   "hops": 2,
+   "owner": "Sana Khan"
+  },
+  {
+   "service": "web-frontend",
+   "tier": "tier-1",
+   "hops": 2,
+   "owner": "Arjun Reddy"
+  }
+ ],
+ "recent_deploys": [
+  {
+   "id": "DEP-036",
+   "service": "payments-api",
+   "version": "v2.3.1",
+   "deployed_at": "2026-10-14T04:50:00Z",
+   "author": "Asha Menon"
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 1.0
+   },
+   {
+    "id": "svc:invoicing",
+    "label": "Service",
+    "name": "invoicing",
+    "props": {
+     "tier": "tier-3",
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": 1.0
+   },
+   {
+    "id": "svc:order-service",
+    "label": "Service",
+    "name": "order-service",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 1.0
+   },
+   {
+    "id": "svc:refunds",
+    "label": "Service",
+    "name": "refunds",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": 1.0
+   },
+   {
+    "id": "svc:subscriptions",
+    "label": "Service",
+    "name": "subscriptions",
+    "props": {
+     "tier": "tier-2",
+     "team": "growth"
+    },
+    "highlight": false,
+    "score": 1.0
+   },
+   {
+    "id": "svc:mobile-bff",
+    "label": "Service",
+    "name": "mobile-bff",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 2.0
+   },
+   {
+    "id": "svc:web-frontend",
+    "label": "Service",
+    "name": "web-frontend",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 2.0
+   },
+   {
+    "id": "svc:admin-portal",
+    "label": "Service",
+    "name": "admin-portal",
+    "props": {
+     "tier": "tier-3",
+     "team": "platform"
+    },
+    "highlight": false,
+    "score": 2.0
+   },
+   {
+    "id": "svc:loyalty",
+    "label": "Service",
+    "name": "loyalty",
+    "props": {
+     "tier": "tier-3",
+     "team": "growth"
+    },
+    "highlight": false,
+    "score": 2.0
+   },
+   {
+    "id": "dep:DEP-036",
+    "label": "Deploy",
+    "name": "payments-api v2.3.1",
+    "props": {
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "eng:asha-menon",
+    "label": "Engineer",
+    "name": "Asha Menon",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "svc:refunds|DEPENDS_ON|svc:payments-api",
+    "source": "svc:refunds",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:refunds|DEPENDS_ON|svc:order-service",
+    "source": "svc:refunds",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:refunds",
+    "source": "svc:admin-portal",
+    "target": "svc:refunds",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
+    "source": "svc:admin-portal",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
+    "source": "svc:order-service",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
+    "source": "svc:checkout",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
+    "source": "svc:web-frontend",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
+    "source": "svc:loyalty",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
+    "source": "svc:subscriptions",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:invoicing|DEPENDS_ON|svc:payments-api",
+    "source": "svc:invoicing",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:invoicing|DEPENDS_ON|svc:order-service",
+    "source": "svc:invoicing",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:checkout",
+    "source": "svc:mobile-bff",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|TO|svc:payments-api",
+    "source": "dep:DEP-036",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-036",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": true
+   }
+  ]
+ }
+}

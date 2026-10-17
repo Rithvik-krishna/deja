@@ -1,0 +1,139 @@
+{
+ "session_id": "fresh",
+ "reply": "Yes - this is INC-045 (checkout latency spiking). Already tried: restart-pods. Next best: rollback-deploy.",
+ "intent": "recall",
+ "incident_id": "INC-045",
+ "tool_calls": [
+  {
+   "name": "incident",
+   "args": {
+    "incident_id": "INC-045"
+   },
+   "summary": "1 attempts on record"
+  }
+ ],
+ "recalled": [
+  "INC-045: checkout latency spiking (origin payments-api)",
+  "restart-pods -> FAILED"
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "inc:INC-045",
+    "label": "Incident",
+    "name": "INC-045",
+    "props": {
+     "severity": "SEV2",
+     "symptom": "latency",
+     "status": "open",
+     "title": "checkout latency spiking"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "dep:DEP-036",
+    "label": "Deploy",
+    "name": "payments-api v2.3.1",
+    "props": {
+     "version": "v2.3.1",
+     "deployed_at": "2026-10-14T04:50:00Z"
+    },
+    "highlight": true,
+    "score": null
+   },
+   {
+    "id": "eng:asha-menon",
+    "label": "Engineer",
+    "name": "Asha Menon",
+    "props": {
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": null
+   },
+   {
+    "id": "fix:restart-pods",
+    "label": "Fix",
+    "name": "restart-pods",
+    "props": {},
+    "highlight": false,
+    "score": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "inc:INC-045|ORIGINATED_IN|svc:payments-api",
+    "source": "inc:INC-045",
+    "target": "svc:payments-api",
+    "type": "ORIGINATED_IN",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|IMPACTED|svc:checkout",
+    "source": "inc:INC-045",
+    "target": "svc:checkout",
+    "type": "IMPACTED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|TO|svc:payments-api",
+    "source": "dep:DEP-036",
+    "target": "svc:payments-api",
+    "type": "TO",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "dep:DEP-036|AUTHORED_BY|eng:asha-menon",
+    "source": "dep:DEP-036",
+    "target": "eng:asha-menon",
+    "type": "AUTHORED_BY",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|FOLLOWED|dep:DEP-036",
+    "source": "inc:INC-045",
+    "target": "dep:DEP-036",
+    "type": "FOLLOWED",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "inc:INC-045|ATTEMPTED|fix:restart-pods",
+    "source": "inc:INC-045",
+    "target": "fix:restart-pods",
+    "type": "ATTEMPTED",
+    "props": {
+     "status": "FAILED"
+    },
+    "highlight": false
+   }
+  ]
+ }
+}

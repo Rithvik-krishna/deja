@@ -1,0 +1,128 @@
+{
+ "frozen_now": "2026-10-17T07:00:00Z",
+ "as_of": "2026-10-17",
+ "window_days": 180,
+ "risk_top": [
+  {
+   "service": "payments-api",
+   "transitive_dependents": 9,
+   "incidents_originated": 8,
+   "risk_score": 33.0
+  },
+  {
+   "service": "inventory",
+   "transitive_dependents": 9,
+   "incidents_originated": 4,
+   "risk_score": 21.0
+  },
+  {
+   "service": "redis-cache",
+   "transitive_dependents": 14,
+   "incidents_originated": 2,
+   "risk_score": 20.0
+  },
+  {
+   "service": "kafka-bus",
+   "transitive_dependents": 14,
+   "incidents_originated": 1,
+   "risk_score": 17.0
+  },
+  {
+   "service": "fraud-check",
+   "transitive_dependents": 10,
+   "incidents_originated": 2,
+   "risk_score": 16.0
+  }
+ ],
+ "incidents_in_window": 41,
+ "payments_api": {
+  "transitive_dependents": 9,
+  "fan_in_rank": 6,
+  "incident_rank": 1
+ },
+ "fix_stats_payments_api": {
+  "rollback-deploy": {
+   "attempts": 5,
+   "successes": 5
+  },
+  "increase-conn-pool": {
+   "attempts": 2,
+   "successes": 2
+  },
+  "toggle-feature-flag": {
+   "attempts": 1,
+   "successes": 1
+  },
+  "flush-cache": {
+   "attempts": 1,
+   "successes": 0
+  },
+  "scale-up-replicas": {
+   "attempts": 1,
+   "successes": 0
+  },
+  "restart-pods": {
+   "attempts": 5,
+   "successes": 0
+  }
+ },
+ "fix_stats_payments_api_latency": {
+  "rollback-deploy": {
+   "attempts": 4,
+   "successes": 4,
+   "avoid": false
+  },
+  "scale-up-replicas": {
+   "attempts": 1,
+   "successes": 0,
+   "avoid": false
+  },
+  "restart-pods": {
+   "attempts": 4,
+   "successes": 0,
+   "avoid": true
+  }
+ },
+ "alert_checkout_latency": {
+  "likely_origin": "payments-api",
+  "suspect_order": [
+   "payments-api",
+   "inventory",
+   "checkout",
+   "cart",
+   "kafka-bus"
+  ],
+  "top_recommendation": "rollback-deploy",
+  "avoid": [
+   "restart-pods"
+  ],
+  "similar_incident_count": 5
+ },
+ "owner_checks": [
+  {
+   "service": "payments-api",
+   "on": "2026-07-15",
+   "owner": "Asha Menon"
+  },
+  {
+   "service": "search",
+   "on": "2026-05-01",
+   "owner": "Kiran Rao"
+  },
+  {
+   "service": "search",
+   "on": "2026-08-01",
+   "owner": "Meera Nair"
+  },
+  {
+   "service": "refunds",
+   "on": "2026-04-30",
+   "owner": "Sana Khan"
+  },
+  {
+   "service": "refunds",
+   "on": "2026-05-01",
+   "owner": "Dev Patel"
+  }
+ ]
+}

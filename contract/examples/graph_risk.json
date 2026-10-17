@@ -1,0 +1,755 @@
+{
+ "as_of": "2026-10-17",
+ "window_days": 180,
+ "incidents_in_window": 41,
+ "services": [
+  {
+   "service": "payments-api",
+   "tier": "tier-2",
+   "team": "payments-platform",
+   "owner": "Asha Menon",
+   "direct_dependents": 5,
+   "transitive_dependents": 9,
+   "incidents_originated": 8,
+   "risk_score": 33.0,
+   "rank": 1,
+   "fan_in_rank": 6,
+   "incident_rank": 1,
+   "insight": "payments-api is tier-2 but 9 services transitively depend on it and it originated 8 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "inventory",
+   "tier": "tier-2",
+   "team": "supply",
+   "owner": "Kiran Rao",
+   "direct_dependents": 3,
+   "transitive_dependents": 9,
+   "incidents_originated": 4,
+   "risk_score": 21.0,
+   "rank": 2,
+   "fan_in_rank": 5,
+   "incident_rank": 3,
+   "insight": "inventory is tier-2 but 9 services transitively depend on it and it originated 4 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "redis-cache",
+   "tier": "tier-2",
+   "team": "infra",
+   "owner": "Vikram Singh",
+   "direct_dependents": 5,
+   "transitive_dependents": 14,
+   "incidents_originated": 2,
+   "risk_score": 20.0,
+   "rank": 3,
+   "fan_in_rank": 2,
+   "incident_rank": 10,
+   "insight": "redis-cache is tier-2 but 14 services transitively depend on it and it originated 2 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "kafka-bus",
+   "tier": "tier-2",
+   "team": "infra",
+   "owner": "Vikram Singh",
+   "direct_dependents": 5,
+   "transitive_dependents": 14,
+   "incidents_originated": 1,
+   "risk_score": 17.0,
+   "rank": 4,
+   "fan_in_rank": 1,
+   "incident_rank": 13,
+   "insight": "kafka-bus is tier-2 but 14 services transitively depend on it and it originated 1 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "fraud-check",
+   "tier": "tier-2",
+   "team": "platform",
+   "owner": "Ravi Iyer",
+   "direct_dependents": 1,
+   "transitive_dependents": 10,
+   "incidents_originated": 2,
+   "risk_score": 16.0,
+   "rank": 5,
+   "fan_in_rank": 4,
+   "incident_rank": 6,
+   "insight": "fraud-check is tier-2 but 10 services transitively depend on it and it originated 2 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "user-profile",
+   "tier": "tier-2",
+   "team": "identity",
+   "owner": "Lakshmi Pillai",
+   "direct_dependents": 6,
+   "transitive_dependents": 13,
+   "incidents_originated": 1,
+   "risk_score": 16.0,
+   "rank": 6,
+   "fan_in_rank": 3,
+   "incident_rank": 18,
+   "insight": "user-profile is tier-2 but 13 services transitively depend on it and it originated 1 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "checkout",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Sana Khan",
+   "direct_dependents": 2,
+   "transitive_dependents": 2,
+   "incidents_originated": 4,
+   "risk_score": 14.0,
+   "rank": 7,
+   "fan_in_rank": 12,
+   "incident_rank": 2,
+   "insight": "checkout is tier-1 but 2 services transitively depend on it and it originated 4 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "order-service",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Sana Khan",
+   "direct_dependents": 5,
+   "transitive_dependents": 7,
+   "incidents_originated": 2,
+   "risk_score": 13.0,
+   "rank": 8,
+   "fan_in_rank": 7,
+   "incident_rank": 8,
+   "insight": "order-service is tier-1 but 7 services transitively depend on it and it originated 2 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "search",
+   "tier": "tier-2",
+   "team": "discovery",
+   "owner": "Meera Nair",
+   "direct_dependents": 2,
+   "transitive_dependents": 2,
+   "incidents_originated": 3,
+   "risk_score": 11.0,
+   "rank": 9,
+   "fan_in_rank": 13,
+   "incident_rank": 4,
+   "insight": "search is tier-2 but 2 services transitively depend on it and it originated 3 of the last 41 incidents (180d)."
+  },
+  {
+   "service": "cart",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Arjun Reddy",
+   "direct_dependents": 3,
+   "transitive_dependents": 3,
+   "incidents_originated": 2,
+   "risk_score": 9.0,
+   "rank": 10,
+   "fan_in_rank": 10,
+   "incident_rank": 5,
+   "insight": "cart is tier-1 but 3 services transitively depend on it and it originated 2 of the last 41 incidents (180d)."
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "svc:payments-api",
+    "label": "Service",
+    "name": "payments-api",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": true,
+    "score": 33.0
+   },
+   {
+    "id": "svc:inventory",
+    "label": "Service",
+    "name": "inventory",
+    "props": {
+     "tier": "tier-2",
+     "team": "supply"
+    },
+    "highlight": true,
+    "score": 21.0
+   },
+   {
+    "id": "svc:redis-cache",
+    "label": "Service",
+    "name": "redis-cache",
+    "props": {
+     "tier": "tier-2",
+     "team": "infra"
+    },
+    "highlight": true,
+    "score": 20.0
+   },
+   {
+    "id": "svc:kafka-bus",
+    "label": "Service",
+    "name": "kafka-bus",
+    "props": {
+     "tier": "tier-2",
+     "team": "infra"
+    },
+    "highlight": false,
+    "score": 17.0
+   },
+   {
+    "id": "svc:fraud-check",
+    "label": "Service",
+    "name": "fraud-check",
+    "props": {
+     "tier": "tier-2",
+     "team": "platform"
+    },
+    "highlight": false,
+    "score": 16.0
+   },
+   {
+    "id": "svc:user-profile",
+    "label": "Service",
+    "name": "user-profile",
+    "props": {
+     "tier": "tier-2",
+     "team": "identity"
+    },
+    "highlight": false,
+    "score": 16.0
+   },
+   {
+    "id": "svc:checkout",
+    "label": "Service",
+    "name": "checkout",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 14.0
+   },
+   {
+    "id": "svc:order-service",
+    "label": "Service",
+    "name": "order-service",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 13.0
+   },
+   {
+    "id": "svc:search",
+    "label": "Service",
+    "name": "search",
+    "props": {
+     "tier": "tier-2",
+     "team": "discovery"
+    },
+    "highlight": false,
+    "score": 11.0
+   },
+   {
+    "id": "svc:cart",
+    "label": "Service",
+    "name": "cart",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 9.0
+   },
+   {
+    "id": "svc:shipping-quotes",
+    "label": "Service",
+    "name": "shipping-quotes",
+    "props": {
+     "tier": "tier-3",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 9.0
+   },
+   {
+    "id": "svc:recommendations",
+    "label": "Service",
+    "name": "recommendations",
+    "props": {
+     "tier": "tier-2",
+     "team": "discovery"
+    },
+    "highlight": false,
+    "score": 7.0
+   },
+   {
+    "id": "svc:auth-service",
+    "label": "Service",
+    "name": "auth-service",
+    "props": {
+     "tier": "tier-1",
+     "team": "identity"
+    },
+    "highlight": false,
+    "score": 6.0
+   },
+   {
+    "id": "svc:notifications",
+    "label": "Service",
+    "name": "notifications",
+    "props": {
+     "tier": "tier-3",
+     "team": "growth"
+    },
+    "highlight": false,
+    "score": 6.0
+   },
+   {
+    "id": "svc:feature-flags",
+    "label": "Service",
+    "name": "feature-flags",
+    "props": {
+     "tier": "tier-3",
+     "team": "platform"
+    },
+    "highlight": false,
+    "score": 4.0
+   },
+   {
+    "id": "svc:refunds",
+    "label": "Service",
+    "name": "refunds",
+    "props": {
+     "tier": "tier-2",
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": 4.0
+   },
+   {
+    "id": "svc:loyalty",
+    "label": "Service",
+    "name": "loyalty",
+    "props": {
+     "tier": "tier-3",
+     "team": "growth"
+    },
+    "highlight": false,
+    "score": 3.0
+   },
+   {
+    "id": "svc:mobile-bff",
+    "label": "Service",
+    "name": "mobile-bff",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 3.0
+   },
+   {
+    "id": "svc:subscriptions",
+    "label": "Service",
+    "name": "subscriptions",
+    "props": {
+     "tier": "tier-2",
+     "team": "growth"
+    },
+    "highlight": false,
+    "score": 3.0
+   },
+   {
+    "id": "svc:web-frontend",
+    "label": "Service",
+    "name": "web-frontend",
+    "props": {
+     "tier": "tier-1",
+     "team": "commerce"
+    },
+    "highlight": false,
+    "score": 3.0
+   },
+   {
+    "id": "svc:admin-portal",
+    "label": "Service",
+    "name": "admin-portal",
+    "props": {
+     "tier": "tier-3",
+     "team": "platform"
+    },
+    "highlight": false,
+    "score": 0.0
+   },
+   {
+    "id": "svc:invoicing",
+    "label": "Service",
+    "name": "invoicing",
+    "props": {
+     "tier": "tier-3",
+     "team": "payments-platform"
+    },
+    "highlight": false,
+    "score": 0.0
+   }
+  ],
+  "edges": [
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:cart",
+    "source": "svc:web-frontend",
+    "target": "svc:cart",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
+    "source": "svc:web-frontend",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:auth-service",
+    "source": "svc:web-frontend",
+    "target": "svc:auth-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:recommendations",
+    "source": "svc:web-frontend",
+    "target": "svc:recommendations",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:search",
+    "source": "svc:web-frontend",
+    "target": "svc:search",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:cart",
+    "source": "svc:mobile-bff",
+    "target": "svc:cart",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:checkout",
+    "source": "svc:mobile-bff",
+    "target": "svc:checkout",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:auth-service",
+    "source": "svc:mobile-bff",
+    "target": "svc:auth-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:search",
+    "source": "svc:mobile-bff",
+    "target": "svc:search",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:mobile-bff|DEPENDS_ON|svc:user-profile",
+    "source": "svc:mobile-bff",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:feature-flags",
+    "source": "svc:checkout",
+    "target": "svc:feature-flags",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:cart",
+    "source": "svc:checkout",
+    "target": "svc:cart",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:order-service",
+    "source": "svc:checkout",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:inventory",
+    "source": "svc:checkout",
+    "target": "svc:inventory",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:checkout|DEPENDS_ON|svc:shipping-quotes",
+    "source": "svc:checkout",
+    "target": "svc:shipping-quotes",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:cart|DEPENDS_ON|svc:redis-cache",
+    "source": "svc:cart",
+    "target": "svc:redis-cache",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:cart|DEPENDS_ON|svc:feature-flags",
+    "source": "svc:cart",
+    "target": "svc:feature-flags",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:cart|DEPENDS_ON|svc:inventory",
+    "source": "svc:cart",
+    "target": "svc:inventory",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:order-service|DEPENDS_ON|svc:kafka-bus",
+    "source": "svc:order-service",
+    "target": "svc:kafka-bus",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
+    "source": "svc:order-service",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:order-service|DEPENDS_ON|svc:inventory",
+    "source": "svc:order-service",
+    "target": "svc:inventory",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:search|DEPENDS_ON|svc:redis-cache",
+    "source": "svc:search",
+    "target": "svc:redis-cache",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:recommendations|DEPENDS_ON|svc:redis-cache",
+    "source": "svc:recommendations",
+    "target": "svc:redis-cache",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:recommendations|DEPENDS_ON|svc:user-profile",
+    "source": "svc:recommendations",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:inventory|DEPENDS_ON|svc:redis-cache",
+    "source": "svc:inventory",
+    "target": "svc:redis-cache",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:inventory|DEPENDS_ON|svc:kafka-bus",
+    "source": "svc:inventory",
+    "target": "svc:kafka-bus",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:payments-api|DEPENDS_ON|svc:redis-cache",
+    "source": "svc:payments-api",
+    "target": "svc:redis-cache",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:payments-api|DEPENDS_ON|svc:fraud-check",
+    "source": "svc:payments-api",
+    "target": "svc:fraud-check",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:fraud-check|DEPENDS_ON|svc:user-profile",
+    "source": "svc:fraud-check",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:fraud-check|DEPENDS_ON|svc:kafka-bus",
+    "source": "svc:fraud-check",
+    "target": "svc:kafka-bus",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:refunds|DEPENDS_ON|svc:payments-api",
+    "source": "svc:refunds",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:refunds|DEPENDS_ON|svc:order-service",
+    "source": "svc:refunds",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:subscriptions|DEPENDS_ON|svc:user-profile",
+    "source": "svc:subscriptions",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:subscriptions|DEPENDS_ON|svc:kafka-bus",
+    "source": "svc:subscriptions",
+    "target": "svc:kafka-bus",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
+    "source": "svc:subscriptions",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:notifications|DEPENDS_ON|svc:user-profile",
+    "source": "svc:notifications",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:notifications|DEPENDS_ON|svc:kafka-bus",
+    "source": "svc:notifications",
+    "target": "svc:kafka-bus",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:invoicing|DEPENDS_ON|svc:payments-api",
+    "source": "svc:invoicing",
+    "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:invoicing|DEPENDS_ON|svc:order-service",
+    "source": "svc:invoicing",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:loyalty|DEPENDS_ON|svc:user-profile",
+    "source": "svc:loyalty",
+    "target": "svc:user-profile",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
+    "source": "svc:loyalty",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:refunds",
+    "source": "svc:admin-portal",
+    "target": "svc:refunds",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:auth-service",
+    "source": "svc:admin-portal",
+    "target": "svc:auth-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
+    "source": "svc:admin-portal",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": false
+   }
+  ]
+ }
+}

@@ -1,0 +1,236 @@
+{
+ "services": [
+  {
+   "name": "admin-portal",
+   "tier": "tier-3",
+   "team": "platform",
+   "owner": "Ravi Iyer"
+  },
+  {
+   "name": "auth-service",
+   "tier": "tier-1",
+   "team": "identity",
+   "owner": "Lakshmi Pillai"
+  },
+  {
+   "name": "cart",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Arjun Reddy"
+  },
+  {
+   "name": "checkout",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Sana Khan"
+  },
+  {
+   "name": "feature-flags",
+   "tier": "tier-3",
+   "team": "platform",
+   "owner": "Ravi Iyer"
+  },
+  {
+   "name": "fraud-check",
+   "tier": "tier-2",
+   "team": "platform",
+   "owner": "Ravi Iyer"
+  },
+  {
+   "name": "inventory",
+   "tier": "tier-2",
+   "team": "supply",
+   "owner": "Kiran Rao"
+  },
+  {
+   "name": "invoicing",
+   "tier": "tier-3",
+   "team": "payments-platform",
+   "owner": "Dev Patel"
+  },
+  {
+   "name": "kafka-bus",
+   "tier": "tier-2",
+   "team": "infra",
+   "owner": "Vikram Singh"
+  },
+  {
+   "name": "loyalty",
+   "tier": "tier-3",
+   "team": "growth",
+   "owner": "Tara Bose"
+  },
+  {
+   "name": "mobile-bff",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Sana Khan"
+  },
+  {
+   "name": "notifications",
+   "tier": "tier-3",
+   "team": "growth",
+   "owner": "Tara Bose"
+  },
+  {
+   "name": "order-service",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Sana Khan"
+  },
+  {
+   "name": "payments-api",
+   "tier": "tier-2",
+   "team": "payments-platform",
+   "owner": "Asha Menon"
+  },
+  {
+   "name": "recommendations",
+   "tier": "tier-2",
+   "team": "discovery",
+   "owner": "Meera Nair"
+  },
+  {
+   "name": "redis-cache",
+   "tier": "tier-2",
+   "team": "infra",
+   "owner": "Vikram Singh"
+  },
+  {
+   "name": "refunds",
+   "tier": "tier-2",
+   "team": "payments-platform",
+   "owner": "Dev Patel"
+  },
+  {
+   "name": "search",
+   "tier": "tier-2",
+   "team": "discovery",
+   "owner": "Meera Nair"
+  },
+  {
+   "name": "shipping-quotes",
+   "tier": "tier-3",
+   "team": "commerce",
+   "owner": "Arjun Reddy"
+  },
+  {
+   "name": "subscriptions",
+   "tier": "tier-2",
+   "team": "growth",
+   "owner": "Tara Bose"
+  },
+  {
+   "name": "user-profile",
+   "tier": "tier-2",
+   "team": "identity",
+   "owner": "Lakshmi Pillai"
+  },
+  {
+   "name": "web-frontend",
+   "tier": "tier-1",
+   "team": "commerce",
+   "owner": "Arjun Reddy"
+  }
+ ],
+ "fixes": [
+  {
+   "id": "restart-pods",
+   "name": "restart-pods",
+   "description": "Restart affected pods/instances"
+  },
+  {
+   "id": "rollback-deploy",
+   "name": "rollback-deploy",
+   "description": "Roll back to the previous release"
+  },
+  {
+   "id": "scale-up-replicas",
+   "name": "scale-up-replicas",
+   "description": "Scale up replicas / capacity"
+  },
+  {
+   "id": "increase-conn-pool",
+   "name": "increase-conn-pool",
+   "description": "Increase DB / connection pool limits"
+  },
+  {
+   "id": "flush-cache",
+   "name": "flush-cache",
+   "description": "Flush and rebuild the cache"
+  },
+  {
+   "id": "toggle-feature-flag",
+   "name": "toggle-feature-flag",
+   "description": "Disable the feature flag tied to the change"
+  },
+  {
+   "id": "failover-db-replica",
+   "name": "failover-db-replica",
+   "description": "Fail over to the replica"
+  },
+  {
+   "id": "rotate-credentials",
+   "name": "rotate-credentials",
+   "description": "Rotate expired credentials/tokens"
+  }
+ ],
+ "engineers": [
+  {
+   "id": "asha-menon",
+   "name": "Asha Menon",
+   "team": "payments-platform"
+  },
+  {
+   "id": "dev-patel",
+   "name": "Dev Patel",
+   "team": "payments-platform"
+  },
+  {
+   "id": "ravi-iyer",
+   "name": "Ravi Iyer",
+   "team": "platform"
+  },
+  {
+   "id": "kiran-rao",
+   "name": "Kiran Rao",
+   "team": "supply"
+  },
+  {
+   "id": "meera-nair",
+   "name": "Meera Nair",
+   "team": "discovery"
+  },
+  {
+   "id": "sana-khan",
+   "name": "Sana Khan",
+   "team": "commerce"
+  },
+  {
+   "id": "arjun-reddy",
+   "name": "Arjun Reddy",
+   "team": "commerce"
+  },
+  {
+   "id": "lakshmi-pillai",
+   "name": "Lakshmi Pillai",
+   "team": "identity"
+  },
+  {
+   "id": "vikram-singh",
+   "name": "Vikram Singh",
+   "team": "infra"
+  },
+  {
+   "id": "tara-bose",
+   "name": "Tara Bose",
+   "team": "growth"
+  }
+ ],
+ "symptoms": [
+  "latency",
+  "timeout",
+  "5xx",
+  "oom"
+ ]
+}
