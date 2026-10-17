@@ -1,5 +1,5 @@
 import { useCallback, useReducer, useRef, useState } from "react";
-import { api, type ChatResponse, type EvidenceShockResponse, type GraphPayload } from "./api/client";
+import { api, type ChatResponse, type EvidenceShockResponse, type GraphPayload, type IncidentSummary } from "./api/client";
 import { Chat, type ChatSender } from "./components/Chat";
 import { DemoBar } from "./components/DemoBar";
 import { IncidentPanel } from "./components/IncidentPanel";
@@ -111,6 +111,53 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
       }
     },
     [evidenceGraph, topologyGraph, selectedIncidentId]
+  );
+
+  const handleStressTestService = useCallback(
+    async (serviceName?: string) => {
+      setActiveTab("stress");
+      handleGraphModeChange("evidence");
+
+      try {
+        let list: IncidentSummary[] = [];
+        if (typeof api.incidents === "function") {
+          list = await api.incidents();
+        }
+        if (!list || list.length === 0) return;
+
+        let targetId: string | null = null;
+        if (serviceName) {
+          const sLower = serviceName.toLowerCase();
+          const match =
+            list.find((i) => i.origin?.toLowerCase() === sLower) ||
+            list.find((i) => i.impacted && i.impacted.some((s) => s.toLowerCase() === sLower)) ||
+            list.find((i) => i.title.toLowerCase().includes(sLower));
+          if (match) {
+            targetId = match.id;
+          }
+        }
+
+        if (!targetId && !selectedIncidentId) {
+          targetId = list[0].id;
+        }
+
+        if (targetId) {
+          setSelectedIncidentId(targetId);
+          try {
+            const hyp = await api.hypotheses(targetId);
+            if (hyp.graph && hyp.graph.nodes && hyp.graph.nodes.length > 0) {
+              setEvidenceGraph(hyp.graph);
+              setGraph(hyp.graph);
+            }
+          } catch {
+            // Handled inside StressTestPanel
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    },
+    [selectedIncidentId, handleGraphModeChange]
   );
 
   const handleChatResponse = useCallback((res: ChatResponse) => {
@@ -287,10 +334,7 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
                   setActiveTab("owners");
                   setOwnersFocus({ service: svc, seq: Date.now() });
                 }}
-                onStressTest={() => {
-                  setActiveTab("stress");
-                  handleGraphModeChange("evidence");
-                }}
+                onStressTest={handleStressTestService}
                 onNodeClick={(node) => {
                   if (node.label.toLowerCase().includes("service")) {
                     setFocusIds([node.id]);
@@ -332,6 +376,20 @@ export default function App({ demoPauseMs = DEMO_PAUSE_MS }: { demoPauseMs?: num
               onGraphChange={updateGraph}
               onNotify={notify}
               controllerRef={stressController}
+              onSelectIncident={(id) => {
+                setSelectedIncidentId(id || null);
+                if (id) {
+                  api
+                    .hypotheses(id)
+                    .then((hyp) => {
+                      if (hyp.graph && hyp.graph.nodes && hyp.graph.nodes.length > 0) {
+                        setEvidenceGraph(hyp.graph);
+                        setGraph(hyp.graph);
+                      }
+                    })
+                    .catch(() => {});
+                }
+              }}
             />
           </div>
           <div {...panel("owners")}>

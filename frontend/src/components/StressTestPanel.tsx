@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type MutableRefObject } from "react";
-import { api, type EvidenceShockRequest, type EvidenceShockResponse, type GraphPayload } from "../api/client";
+import { api, type EvidenceShockRequest, type EvidenceShockResponse, type GraphPayload, type IncidentSummary } from "../api/client";
 import { errorMessage, parseApiError } from "../lib/errors";
 import { useAsync } from "../state/useAsync";
 import type { ToastKind } from "../state/useToasts";
@@ -35,18 +35,84 @@ export interface StressTestPanelProps {
   onNotify: (kind: ToastKind, text: string) => void;
   /** Filled with a controller for the incident currently shown (null when there is none). */
   controllerRef?: MutableRefObject<StressController | null>;
+  onSelectIncident?: (id: string) => void;
 }
 
 export function StressTestPanel(props: StressTestPanelProps) {
   // History is kept per incident in React state (session-local) so results never mix between incidents.
   const [history, setHistory] = useState<Record<string, ShockRun[]>>({});
   const seq = useRef(0);
+  const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
+
+  useEffect(() => {
+    if (!props.incidentId && props.active && props.onSelectIncident && typeof api.incidents === "function") {
+      api
+        .incidents()
+        .then((res) => {
+          if (Array.isArray(res)) setIncidents(res);
+        })
+        .catch(() => {});
+    }
+  }, [props.incidentId, props.active, props.onSelectIncident]);
 
   if (!props.incidentId) {
     return (
       <div className="stress-panel">
         <p className="shock-note">{SCORING_NOTE}</p>
         <p className="state">Select an incident (in the Incident tab, or by raising one in chat) to stress-test its diagnosis.</p>
+        {props.onSelectIncident && incidents.length > 0 && (
+          <div
+            className="shock-incident-picker"
+            style={{
+              marginTop: 16,
+              padding: "12px 14px",
+              background: "rgba(15, 23, 42, 0.7)",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-bright)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                ⚡ Quick Select Incident
+              </span>
+              <button
+                type="button"
+                className="btn btn-primary btn-small"
+                style={{ fontSize: 11, padding: "3px 8px" }}
+                onClick={() => props.onSelectIncident?.(incidents[0].id)}
+              >
+                Load Latest ({incidents[0].id})
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 240, overflowY: "auto" }}>
+              {incidents.slice(0, 8).map((inc) => (
+                <button
+                  key={inc.id}
+                  type="button"
+                  className="btn btn-secondary btn-small"
+                  style={{
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                  }}
+                  onClick={() => props.onSelectIncident?.(inc.id)}
+                  title={`Stress-test diagnosis for ${inc.title}`}
+                >
+                  <span style={{ fontWeight: 600, color: "var(--text)" }}>
+                    <span style={{ color: "var(--color-primary)", marginRight: 6 }}>{inc.id}</span>
+                    {inc.title}
+                  </span>
+                  <span style={{ fontSize: 11, opacity: 0.7, whiteSpace: "nowrap", marginLeft: 8 }}>
+                    {inc.severity} · {inc.origin || "alert"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -82,7 +148,7 @@ interface BodyProps extends StressTestPanelProps {
 
 type Outcome<T> = { ok: true; value: T } | { ok: false; error: string };
 
-function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChange, onNotify, runs, onRun, nextSeq, controllerRef }: BodyProps) {
+function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChange, onNotify, runs, onRun, nextSeq, controllerRef, onSelectIncident }: BodyProps) {
   const uid = useId();
   // Latch: once this incident's tab has been viewed, keep the data loaded even if the user switches tabs.
   const [wanted, setWanted] = useState(active);
@@ -262,6 +328,17 @@ function StressTestBody({ incidentId, active, shock, onShockResult, onGraphChang
           <span className="row-meta">
             {hyp.data.service} · {hyp.data.symptom}
           </span>
+        )}
+        {onSelectIncident && (
+          <button
+            type="button"
+            className="btn btn-small btn-secondary"
+            style={{ fontSize: 11, padding: "2px 8px", marginLeft: "auto" }}
+            onClick={() => onSelectIncident("")}
+            title="Switch incident"
+          >
+            Switch incident
+          </button>
         )}
       </div>
       <p className="shock-note">{SCORING_NOTE}</p>

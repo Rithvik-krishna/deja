@@ -10,7 +10,7 @@ export interface ServiceInspectorProps {
   onFocus?: (serviceName: string) => void;
   onAskChat?: (prompt: string) => void;
   onViewOwners?: (serviceName: string) => void;
-  onStressTest?: () => void;
+  onStressTest?: (serviceName?: string) => void;
   onClose?: () => void;
 }
 
@@ -508,7 +508,7 @@ export default function ServiceInspector({
 
         {onStressTest && (
           <button
-            onClick={onStressTest}
+            onClick={() => onStressTest(serviceName)}
             style={{
               padding: "6px 8px",
               fontSize: 11,

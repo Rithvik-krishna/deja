@@ -21,7 +21,7 @@ export interface GraphViewProps {
   height?: number | string;
   onAskChat?: (prompt: string) => void;
   onViewOwners?: (serviceName: string) => void;
-  onStressTest?: () => void;
+  onStressTest?: (serviceName?: string) => void;
   catalogServices?: CatalogService[];
   graphMode?: "topology" | "evidence";
   onGraphModeChange?: (mode: "topology" | "evidence") => void;
