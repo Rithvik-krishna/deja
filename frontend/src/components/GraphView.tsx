@@ -2,15 +2,27 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import type { GraphNode, GraphPayload } from "../api/client";
 import GraphLegend from "./graph/GraphLegend";
+import GraphSettingsPanel from "./graph/GraphSettingsPanel";
 import GraphTooltip from "./graph/GraphTooltip";
+import "./graph/obsidian-graph.css";
 import { drawLink, drawNode, getNodeKind } from "./graph/renderers";
-import type { VisualEdge, VisualNode } from "./graph/types";
+import {
+  DEFAULT_GRAPH_SETTINGS,
+  type GraphSettings,
+  type VisualEdge,
+  type VisualNode,
+} from "./graph/types";
 
 export interface GraphViewProps {
   payload: GraphPayload | null;
   onNodeClick?: (node: GraphNode) => void;
   focusIds?: string[];
   height?: number | string;
+}
+
+interface ViewHistoryItem {
+  focusIds: string[];
+  label: string;
 }
 
 export default function GraphView({
@@ -25,6 +37,18 @@ export default function GraphView({
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hoveredNode, setHoveredNode] = useState<VisualNode | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  // Obsidian graph settings
+  const [settings, setSettings] = useState<GraphSettings>({ ...DEFAULT_GRAPH_SETTINGS });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [legendVisible, setLegendVisible] = useState(true);
+
+  // View navigation history for Obsidian Back / Forward buttons
+  const [history, setHistory] = useState<ViewHistoryItem[]>([{ focusIds: [], label: "Initial view" }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const isNavigatingRef = useRef(false);
 
   // Persistent position cache to avoid scrambling node coordinates across updates
   const nodePosCache = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -72,7 +96,8 @@ export default function GraphView({
       return { graphData: { nodes: [], links: [] }, hasHighlights: false, shouldPulse: false };
     }
 
-    const focusSet = new Set(focusIds);
+    const currentFocus = history[historyIndex]?.focusIds ?? focusIds;
+    const focusSet = new Set(currentFocus);
 
     // Identify Service scores to detect top rank flips and near ties (within 0.25)
     const serviceNodes = payload.nodes
@@ -92,7 +117,6 @@ export default function GraphView({
       Math.abs(serviceNodes[0].score - serviceNodes[1].score) <= 0.25;
 
     const pulseFlag = topChanged || nearTie;
-
     const nowTime = performance.now();
 
     // Map visual nodes
@@ -143,8 +167,8 @@ export default function GraphView({
       const isGhost =
         ghostNodeIds.has(String(edge.source)) ||
         ghostNodeIds.has(String(edge.target)) ||
-        edge.type === "SUPPORTS" &&
-          (ghostNodeIds.has(String(edge.source)) || Boolean(edge.props?.removed));
+        (edge.type === "SUPPORTS" &&
+          (ghostNodeIds.has(String(edge.source)) || Boolean(edge.props?.removed)));
 
       return {
         ...edge,
@@ -162,7 +186,33 @@ export default function GraphView({
       hasHighlights: anyHighlight,
       shouldPulse: pulseFlag,
     };
-  }, [payload, focusIds]);
+  }, [payload, focusIds, history, historyIndex]);
+
+  // Track incoming focusIds into view navigation history
+  useEffect(() => {
+    if (isNavigatingRef.current) {
+      isNavigatingRef.current = false;
+      return;
+    }
+    if (focusIds.length === 0) return;
+
+    setHistory((prev) => {
+      const last = prev[prev.length - 1];
+      const same =
+        last &&
+        last.focusIds.length === focusIds.length &&
+        last.focusIds.every((id, i) => id === focusIds[i]);
+      if (same) return prev;
+
+      const next = prev.slice(0, historyIndex + 1);
+      next.push({
+        focusIds,
+        label: focusIds.join(", "),
+      });
+      return next;
+    });
+    setHistoryIndex((prev) => prev + 1);
+  }, [focusIds]);
 
   // Animation frame loop for smooth score transition interpolation
   useEffect(() => {
@@ -196,12 +246,13 @@ export default function GraphView({
     return () => cancelAnimationFrame(animId);
   }, [graphData, shouldPulse]);
 
-  // Center / Zoom on focusIds
+  // Center / Zoom on active focus
+  const currentActiveFocus = history[historyIndex]?.focusIds ?? focusIds;
   useEffect(() => {
-    if (!focusIds || focusIds.length === 0 || !fgRef.current) return;
+    if (!currentActiveFocus || currentActiveFocus.length === 0 || !fgRef.current) return;
 
     const matchedNodes = graphData.nodes.filter(
-      (n) => focusIds.includes(n.id) && typeof n.x === "number" && typeof n.y === "number"
+      (n) => currentActiveFocus.includes(n.id) && typeof n.x === "number" && typeof n.y === "number"
     );
 
     if (matchedNodes.length === 0) return;
@@ -228,7 +279,50 @@ export default function GraphView({
       fgRef.current.centerAt(midX, midY, 600);
       fgRef.current.zoom(1.8, 600);
     }
-  }, [focusIds, graphData]);
+  }, [currentActiveFocus, graphData]);
+
+  // Apply d3 forces dynamically when Obsidian slider settings change
+  useEffect(() => {
+    if (!fgRef.current) return;
+    const fg = fgRef.current;
+
+    // Charge / Repulsion force
+    const chargeForce = fg.d3Force("charge");
+    if (chargeForce) {
+      if (typeof chargeForce.strength === "function") {
+        chargeForce.strength(settings.repulsion);
+      }
+      if (typeof chargeForce.distanceMax === "function") {
+        chargeForce.distanceMax(settings.repelForce);
+      }
+    }
+
+    // Center force
+    const centerForce = fg.d3Force("center");
+    if (centerForce && typeof centerForce.strength === "function") {
+      centerForce.strength(settings.centreForce);
+    }
+
+    // Link force & distance
+    const linkForce = fg.d3Force("link");
+    if (linkForce) {
+      if (typeof linkForce.distance === "function") {
+        linkForce.distance(settings.linkDistance);
+      }
+      if (typeof linkForce.strength === "function") {
+        linkForce.strength(settings.linkForce);
+      }
+    }
+
+    // Reheat simulation smoothly without node scrambling
+    fg.d3ReheatSimulation();
+  }, [
+    settings.repulsion,
+    settings.centreForce,
+    settings.repelForce,
+    settings.linkForce,
+    settings.linkDistance,
+  ]);
 
   // Cache node positions as the simulation runs
   const handleEngineTick = () => {
@@ -245,6 +339,71 @@ export default function GraphView({
     }
   };
 
+  // Animate button handler
+  const handleAnimate = () => {
+    if (!fgRef.current) return;
+    setIsAnimating(true);
+    fgRef.current.d3ReheatSimulation();
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 1200);
+  };
+
+  // Navigation handlers
+  const handleGoBack = () => {
+    if (historyIndex > 0) {
+      isNavigatingRef.current = true;
+      setHistoryIndex(historyIndex - 1);
+    }
+  };
+
+  const handleGoForward = () => {
+    if (historyIndex < history.length - 1) {
+      isNavigatingRef.current = true;
+      setHistoryIndex(historyIndex + 1);
+    }
+  };
+
+  // Node click with history push
+  const handleInternalNodeClick = (node: GraphNode) => {
+    onNodeClick?.(node);
+
+    // Push into navigation history
+    setHistory((prev) => {
+      const next = prev.slice(0, historyIndex + 1);
+      next.push({
+        focusIds: [node.id],
+        label: node.name || node.id,
+      });
+      return next;
+    });
+    setHistoryIndex((prev) => prev + 1);
+  };
+
+  // Overflow menu actions
+  const handleResetView = () => {
+    setIsOverflowMenuOpen(false);
+    if (!fgRef.current) return;
+    fgRef.current.centerAt(0, 0, 500);
+    fgRef.current.zoom(1, 500);
+  };
+
+  const handleFitScreen = () => {
+    setIsOverflowMenuOpen(false);
+    if (!fgRef.current) return;
+    fgRef.current.zoomToFit(500, 40);
+  };
+
+  const handleToggleSettings = () => {
+    setIsOverflowMenuOpen(false);
+    setIsSettingsOpen((prev) => !prev);
+  };
+
+  const handleToggleLegend = () => {
+    setIsOverflowMenuOpen(false);
+    setLegendVisible((prev) => !prev);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -258,6 +417,248 @@ export default function GraphView({
         borderRadius: 8,
       }}
     >
+      {/* Minimal Obsidian Header */}
+      <div
+        style={{
+          position: "absolute",
+          top: 14,
+          left: 16,
+          right: 16,
+          zIndex: 25,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pointerEvents: "none",
+        }}
+      >
+        {/* Left: Back / Forward & Graph title */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            pointerEvents: "auto",
+          }}
+        >
+          {/* Navigation Controls */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              backgroundColor: "rgba(15, 23, 42, 0.75)",
+              border: "1px solid rgba(51, 65, 85, 0.6)",
+              borderRadius: 8,
+              padding: "2px 4px",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <button
+              onClick={handleGoBack}
+              disabled={historyIndex <= 0}
+              className="obsidian-icon-btn"
+              title="Go back in view history"
+              aria-label="Go back in view history"
+              style={{ width: 26, height: 26 }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+            <button
+              onClick={handleGoForward}
+              disabled={historyIndex >= history.length - 1}
+              className="obsidian-icon-btn"
+              title="Go forward in view history"
+              aria-label="Go forward in view history"
+              style={{ width: 26, height: 26 }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Minimal Title */}
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              fontFamily: "system-ui, -apple-system, sans-serif",
+              color: "#f8fafc",
+              margin: 0,
+              letterSpacing: "-0.03em",
+              textShadow: "0 2px 8px rgba(0, 0, 0, 0.7)",
+            }}
+          >
+            Graph view
+          </h1>
+        </div>
+
+        {/* Right: Toggle Settings & Overflow menu */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            pointerEvents: "auto",
+            position: "relative",
+          }}
+        >
+          {/* Toggle Settings Button (visible if panel closed or for quick toggling) */}
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="obsidian-icon-btn"
+            title={isSettingsOpen ? "Hide graph settings" : "Open graph settings"}
+            aria-label={isSettingsOpen ? "Hide graph settings" : "Open graph settings"}
+            style={{
+              width: 32,
+              height: 32,
+              backgroundColor: isSettingsOpen ? "rgba(37, 99, 235, 0.25)" : "rgba(15, 23, 42, 0.75)",
+              border: `1px solid ${isSettingsOpen ? "#3b82f6" : "rgba(51, 65, 85, 0.6)"}`,
+              borderRadius: 8,
+              color: isSettingsOpen ? "#60a5fa" : "#94a3b8",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1" y1="14" x2="7" y2="14" />
+              <line x1="9" y1="8" x2="15" y2="8" />
+              <line x1="17" y1="16" x2="23" y2="16" />
+            </svg>
+          </button>
+
+          {/* Overflow Menu Button */}
+          <button
+            onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
+            className="obsidian-icon-btn"
+            title="Graph view options"
+            aria-label="Graph view options"
+            style={{
+              width: 32,
+              height: 32,
+              backgroundColor: isOverflowMenuOpen ? "rgba(51, 65, 85, 0.85)" : "rgba(15, 23, 42, 0.75)",
+              border: "1px solid rgba(51, 65, 85, 0.6)",
+              borderRadius: 8,
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+
+          {/* Overflow Dropdown Menu */}
+          {isOverflowMenuOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 40,
+                right: 0,
+                zIndex: 40,
+                backgroundColor: "rgba(15, 23, 42, 0.96)",
+                border: "1px solid rgba(51, 65, 85, 0.8)",
+                borderRadius: 10,
+                padding: "6px 0",
+                minWidth: 170,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.6)",
+                backdropFilter: "blur(10px)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <button
+                onClick={handleFitScreen}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  textAlign: "left",
+                  padding: "8px 14px",
+                  fontSize: 12,
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(51, 65, 85, 0.5)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <span>🔍</span> Fit to screen
+              </button>
+              <button
+                onClick={handleResetView}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  textAlign: "left",
+                  padding: "8px 14px",
+                  fontSize: 12,
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(51, 65, 85, 0.5)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <span>🎯</span> Reset view
+              </button>
+              <div style={{ height: 1, backgroundColor: "rgba(51, 65, 85, 0.5)", margin: "4px 0" }} />
+              <button
+                onClick={handleToggleSettings}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  textAlign: "left",
+                  padding: "8px 14px",
+                  fontSize: 12,
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(51, 65, 85, 0.5)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <span>⚙️</span> {isSettingsOpen ? "Hide settings" : "Show settings"}
+              </button>
+              <button
+                onClick={handleToggleLegend}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  textAlign: "left",
+                  padding: "8px 14px",
+                  fontSize: 12,
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(51, 65, 85, 0.5)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <span>🗺️</span> {legendVisible ? "Hide legend" : "Show legend"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Empty State */}
       {(!payload || !payload.nodes || payload.nodes.length === 0) && (
         <div
@@ -294,10 +695,10 @@ export default function GraphView({
           backgroundColor="#090d16"
           nodeRelSize={6}
           nodeCanvasObject={(node, ctx, globalScale) =>
-            drawNode(node as VisualNode, ctx, globalScale, hasHighlights)
+            drawNode(node as VisualNode, ctx, globalScale, hasHighlights, settings.nodeScale)
           }
           linkCanvasObject={(link, ctx, globalScale) =>
-            drawLink(link as VisualEdge, ctx, globalScale, hasHighlights)
+            drawLink(link as VisualEdge, ctx, globalScale, hasHighlights, settings.linkThickness)
           }
           nodePointerAreaPaint={(node: any, color, ctx) => {
             ctx.beginPath();
@@ -305,7 +706,7 @@ export default function GraphView({
             ctx.fillStyle = color;
             ctx.fill();
           }}
-          onNodeClick={(node: any) => onNodeClick?.(node as GraphNode)}
+          onNodeClick={(node: any) => handleInternalNodeClick(node as GraphNode)}
           onNodeHover={(node: any) => setHoveredNode(node as VisualNode | null)}
           onEngineTick={handleEngineTick}
           onNodeDragEnd={handleNodeDragEnd}
@@ -319,8 +720,19 @@ export default function GraphView({
         />
       )}
 
+      {/* Floating Obsidian Graph Settings Panel */}
+      {isSettingsOpen && (
+        <GraphSettingsPanel
+          settings={settings}
+          onSettingsChange={setSettings}
+          onAnimate={handleAnimate}
+          isAnimating={isAnimating}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
+
       {/* Interactive Legend Overlay */}
-      <GraphLegend />
+      {legendVisible && <GraphLegend />}
 
       {/* Hover Node Tooltip Card */}
       <GraphTooltip node={hoveredNode} x={mousePos.x} y={mousePos.y} />

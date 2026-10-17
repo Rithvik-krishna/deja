@@ -20,7 +20,8 @@ export function drawNode(
   node: VisualNode,
   ctx: CanvasRenderingContext2D,
   globalScale: number,
-  hasHighlights: boolean
+  hasHighlights: boolean,
+  nodeScale = 1.0
 ): void {
   const x = node.x ?? 0;
   const y = node.y ?? 0;
@@ -49,6 +50,9 @@ export function drawNode(
   } else if (node.kind === "Evidence") {
     radius = 8;
   }
+
+  // Apply customizable node size scale while preserving relative scores
+  radius *= nodeScale;
 
   // Pulse effect if requested (e.g. top suspect flip or near tie)
   if (node.pulse && !isDimmed) {
@@ -235,7 +239,8 @@ export function drawLink(
   link: VisualEdge,
   ctx: CanvasRenderingContext2D,
   globalScale: number,
-  hasHighlights: boolean
+  hasHighlights: boolean,
+  linkThickness = 1.0
 ): void {
   const source = link.source as VisualNode;
   const target = link.target as VisualNode;
@@ -258,12 +263,12 @@ export function drawLink(
   const isGhost = Boolean(link.isGhost || source.isGhost || target.isGhost);
   const style = getEdgeStyle(link.type, link.props, link.highlight, isGhost);
 
-  // Draw main link line
+  // Draw main link line with configurable thickness scale
   ctx.beginPath();
   ctx.moveTo(sx, sy);
   ctx.lineTo(tx, ty);
   ctx.strokeStyle = style.color;
-  ctx.lineWidth = style.width;
+  ctx.lineWidth = style.width * linkThickness;
   ctx.setLineDash(style.dash);
   ctx.stroke();
 

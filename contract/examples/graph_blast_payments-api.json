@@ -203,9 +203,25 @@
   ],
   "edges": [
    {
-    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
-    "source": "svc:checkout",
+    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
+    "source": "svc:order-service",
     "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
+    "source": "svc:admin-portal",
+    "target": "svc:order-service",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:admin-portal|DEPENDS_ON|svc:refunds",
+    "source": "svc:admin-portal",
+    "target": "svc:refunds",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
@@ -219,9 +235,9 @@
     "highlight": true
    },
    {
-    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
-    "source": "svc:web-frontend",
-    "target": "svc:checkout",
+    "id": "svc:checkout|DEPENDS_ON|svc:payments-api",
+    "source": "svc:checkout",
+    "target": "svc:payments-api",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
@@ -235,25 +251,17 @@
     "highlight": true
    },
    {
-    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
-    "source": "svc:loyalty",
-    "target": "svc:order-service",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:refunds|DEPENDS_ON|svc:order-service",
-    "source": "svc:refunds",
-    "target": "svc:order-service",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:refunds|DEPENDS_ON|svc:payments-api",
-    "source": "svc:refunds",
+    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
+    "source": "svc:subscriptions",
     "target": "svc:payments-api",
+    "type": "DEPENDS_ON",
+    "props": {},
+    "highlight": true
+   },
+   {
+    "id": "svc:web-frontend|DEPENDS_ON|svc:checkout",
+    "source": "svc:web-frontend",
+    "target": "svc:checkout",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
@@ -275,33 +283,25 @@
     "highlight": true
    },
    {
-    "id": "svc:admin-portal|DEPENDS_ON|svc:refunds",
-    "source": "svc:admin-portal",
-    "target": "svc:refunds",
-    "type": "DEPENDS_ON",
-    "props": {},
-    "highlight": true
-   },
-   {
-    "id": "svc:admin-portal|DEPENDS_ON|svc:order-service",
-    "source": "svc:admin-portal",
+    "id": "svc:refunds|DEPENDS_ON|svc:order-service",
+    "source": "svc:refunds",
     "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
    },
    {
-    "id": "svc:order-service|DEPENDS_ON|svc:payments-api",
-    "source": "svc:order-service",
+    "id": "svc:refunds|DEPENDS_ON|svc:payments-api",
+    "source": "svc:refunds",
     "target": "svc:payments-api",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
    },
    {
-    "id": "svc:subscriptions|DEPENDS_ON|svc:payments-api",
-    "source": "svc:subscriptions",
-    "target": "svc:payments-api",
+    "id": "svc:loyalty|DEPENDS_ON|svc:order-service",
+    "source": "svc:loyalty",
+    "target": "svc:order-service",
     "type": "DEPENDS_ON",
     "props": {},
     "highlight": true
